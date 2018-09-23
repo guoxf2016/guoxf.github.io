@@ -340,7 +340,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2018-09-24 01:47:39" itemprop="dateModified" datetime="2018-09-24T01:47:39+08:00">2018-09-24</time>
+                <time title="Modified: 2018-09-24 01:55:01" itemprop="dateModified" datetime="2018-09-24T01:55:01+08:00">2018-09-24</time>
               
             
           </span>
@@ -376,7 +376,7 @@
         
           
             <p>本文开始对Glide的源码进行阅读分析。</p>
-<h2 id="uml"><a href="#uml" class="headerlink" title="uml"></a>uml</h2><p>&lt;img src=’<a href="https://g.gravizo.com/svg" target="_blank" rel="noopener">https://g.gravizo.com/svg</a>?<br>@startuml<br>interface ComponentCallbacks2</p>
+<h2 id="uml"><a href="#uml" class="headerlink" title="uml"></a>uml</h2><p>&lt;img src=’<a href="https://g.gravizo.com/svg" target="_blank" rel="noopener">https://g.gravizo.com/svg</a>?<br>@startuml；<br>interface ComponentCallbacks2；</p>
 <p>class Glide {</p>
 <p>}</p>
 <p>class GlideBuilder {</p>
@@ -387,24 +387,24 @@
 <p>}</p>
 <p>interface ArrayPool {</p>
 <p>}</p>
-<p>interface LifecycleListener {<br>    +void onStart()<br>    +void onStop()<br>    +void onDestroy()<br>}</p>
+<p>interface LifecycleListener {<br>    +void onStart()；<br>    +void onStop()；<br>    +void onDestroy()；<br>}</p>
 <p>interface ModelTypes<t> {<br>    +T load();<br>}</t></p>
-<p>interface RequestListener<r> {<br>    +boolean onLoadFailed()<br>    +boolean onResourceReady()<br>}</r></p>
-<p>enum MemoryCategory {<br>    LOW<br>    NORMAL<br>    HIGH<br>    -float multiplier<br>}</p>
+<p>interface RequestListener<r> {<br>    +boolean onLoadFailed()；<br>    +boolean onResourceReady()；<br>}</r></p>
+<p>enum MemoryCategory {<br>    LOW；<br>    NORMAL；<br>    HIGH；<br>    -float multiplier；<br>}</p>
 <p>class Registry {</p>
 <p>}</p>
 <p>class Engine {</p>
 <p>}</p>
 <p>class RequestManagerRetriever {</p>
 <p>}</p>
-<p>class MemorySizeCalculator {<br>    -int bitmapPoolSize<br>    -int memoryCacheSize<br>    -int arrayPoolSize<br>}</p>
+<p>class MemorySizeCalculator {<br>    -int bitmapPoolSize；<br>    -int memoryCacheSize；<br>    -int arrayPoolSize；<br>}</p>
 <p>class RequestOptions {</p>
 <p>}</p>
 <p>abstract class BaseRequestOptions&lt;T extends BaseRequestOptions<t>&gt; {</t></p>
 <p>}</p>
-<p>interface Key {<br>    +void updateDiskCacheKey()<br>    +boolean equals(Object o)<br>    +int hashCode()<br>}</p>
-<p>class Options {<br>    -ArrayMap&lt;Option&lt;?&gt;, Object&gt; values = new CachedHashCodeArrayMap&lt;&gt;()<br>}</p>
-<p>class Option<t> {<br>    -T defaultValue<br>}</t></p>
+<p>interface Key {<br>    +void updateDiskCacheKey()；<br>    +boolean equals(Object o)；<br>    +int hashCode()；<br>}</p>
+<p>class Options {<br>    -ArrayMap&lt;Option&lt;?&gt;, Object&gt; values = new CachedHashCodeArrayMap&lt;&gt;()；<br>}</p>
+<p>class Option<t> {<br>    -T defaultValue；<br>}</t></p>
 <p>ComponentCallbacks2 &lt;|.. Glide</p>
 <p>ContextWrapper &lt;|– GlideContext</p>
 <p>LifecycleListener &lt;|.. RequestManager</p>
