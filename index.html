@@ -340,7 +340,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2018-09-24 01:58:50" itemprop="dateModified" datetime="2018-09-24T01:58:50+08:00">2018-09-24</time>
+                <time title="Modified: 2018-09-24 02:01:43" itemprop="dateModified" datetime="2018-09-24T02:01:43+08:00">2018-09-24</time>
               
             
           </span>
@@ -376,7 +376,16 @@
         
           
             <p>本文开始对Glide的源码进行阅读分析。</p>
-<h2 id="uml"><a href="#uml" class="headerlink" title="uml"></a>uml</h2><p>&lt;img src=’<a href="https://g.gravizo.com/svg" target="_blank" rel="noopener">https://g.gravizo.com/svg</a>?<br>@startuml；<br>interface ComponentCallbacks2；</p>
+<h2 id="uml"><a href="#uml" class="headerlink" title="uml"></a>uml</h2><p>&lt;img src=’<a href="https://g.gravizo.com/svg" target="_blank" rel="noopener">https://g.gravizo.com/svg</a>?<br>@startuml;</p>
+<p>actor User;<br>participant “First Class” as A;<br>participant “Second Class” as B;<br>participant “Last Class” as C;</p>
+<p>User -&gt; A: DoWork;<br>activate A;</p>
+<p>A -&gt; B: Create Request;<br>activate B;</p>
+<p>B -&gt; C: DoWork;<br>activate C;</p>
+<p>C –&gt; B: WorkDone;<br>destroy C;</p>
+<p>B –&gt; A: Request Created;<br>deactivate B;</p>
+<p>A –&gt; User: Done;<br>deactivate A;</p>
+<p>@enduml<br>‘&gt;</p>
+<p>&lt;img src=’<a href="https://g.gravizo.com/svg" target="_blank" rel="noopener">https://g.gravizo.com/svg</a>?<br>@startuml；<br>interface ComponentCallbacks2；</p>
 <p>class Glide {</p>
 <p>}</p>
 <p>class GlideBuilder {</p>
