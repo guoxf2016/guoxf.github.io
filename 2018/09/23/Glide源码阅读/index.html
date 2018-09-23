@@ -108,20 +108,20 @@
 
 
 
-  <meta name="description" content="本文开始对Glide的源码进行阅读分析。 uml &amp;lt;img src=’https://g.gravizo.com/svg?@startumlinterface ComponentCallbacks2 class Glide { } class GlideBuilder { } interface BitmapPool { } interface MemoryCache { } interfa">
+  <meta name="description" content="本文开始对Glide的源码进行阅读分析。 uml 一个例子123Glide.with(fragment)    .load(myUrl)    .into(imageView); 只是一个最基本的使用Glide加载图片的例子。 源码追溯12345678910111213141516171819202122@NonNullpublic static RequestManager with(@NonN">
 <meta name="keywords" content="Glide">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Glide源码阅读">
 <meta property="og:url" content="http://yoursite.com/2018/09/23/Glide源码阅读/index.html">
 <meta property="og:site_name" content="Something">
-<meta property="og:description" content="本文开始对Glide的源码进行阅读分析。 uml &amp;lt;img src=’https://g.gravizo.com/svg?@startumlinterface ComponentCallbacks2 class Glide { } class GlideBuilder { } interface BitmapPool { } interface MemoryCache { } interfa">
+<meta property="og:description" content="本文开始对Glide的源码进行阅读分析。 uml 一个例子123Glide.with(fragment)    .load(myUrl)    .into(imageView); 只是一个最基本的使用Glide加载图片的例子。 源码追溯12345678910111213141516171819202122@NonNullpublic static RequestManager with(@NonN">
 <meta property="og:locale" content="default">
-<meta property="og:image" content="http://www.plantuml.com/plantuml/proxy?src=https://raw.github.com/plantuml/plantuml-server/master/src/main/webapp/resource/test2diagrams.txt">
-<meta property="og:updated_time" content="2018-09-23T18:13:47.206Z">
+<meta property="og:image" content="http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/guoxf2016/pumls/master/glide.puml">
+<meta property="og:updated_time" content="2018-09-23T18:19:31.946Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Glide源码阅读">
-<meta name="twitter:description" content="本文开始对Glide的源码进行阅读分析。 uml &amp;lt;img src=’https://g.gravizo.com/svg?@startumlinterface ComponentCallbacks2 class Glide { } class GlideBuilder { } interface BitmapPool { } interface MemoryCache { } interfa">
-<meta name="twitter:image" content="http://www.plantuml.com/plantuml/proxy?src=https://raw.github.com/plantuml/plantuml-server/master/src/main/webapp/resource/test2diagrams.txt">
+<meta name="twitter:description" content="本文开始对Glide的源码进行阅读分析。 uml 一个例子123Glide.with(fragment)    .load(myUrl)    .into(imageView); 只是一个最基本的使用Glide加载图片的例子。 源码追溯12345678910111213141516171819202122@NonNullpublic static RequestManager with(@NonN">
+<meta name="twitter:image" content="http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/guoxf2016/pumls/master/glide.puml">
 
 
 
@@ -342,7 +342,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2018-09-24 02:13:47" itemprop="dateModified" datetime="2018-09-24T02:13:47+08:00">2018-09-24</time>
+                <time title="Modified: 2018-09-24 02:19:31" itemprop="dateModified" datetime="2018-09-24T02:19:31+08:00">2018-09-24</time>
               
             
           </span>
@@ -376,44 +376,7 @@
 
       
         <p>本文开始对Glide的源码进行阅读分析。</p>
-<h2 id="uml"><a href="#uml" class="headerlink" title="uml"></a>uml</h2><p><img src="http://www.plantuml.com/plantuml/proxy?src=https://raw.github.com/plantuml/plantuml-server/master/src/main/webapp/resource/test2diagrams.txt" alt="alternative text"></p>
-<p>&lt;img src=’<a href="https://g.gravizo.com/svg" target="_blank" rel="noopener">https://g.gravizo.com/svg</a>?<br>@startuml<br>interface ComponentCallbacks2</p>
-<p>class Glide {</p>
-<p>}</p>
-<p>class GlideBuilder {</p>
-<p>}</p>
-<p>interface BitmapPool {</p>
-<p>}</p>
-<p>interface MemoryCache {</p>
-<p>}</p>
-<p>interface ArrayPool {</p>
-<p>}</p>
-<p>interface LifecycleListener {<br>    +void onStart()<br>    +void onStop()<br>    +void onDestroy()<br>}</p>
-<p>interface ModelTypes<t> {<br>    +T load()<br>}</t></p>
-<p>interface RequestListener<r> {<br>    +boolean onLoadFailed()<br>    +boolean onResourceReady()<br>}</r></p>
-<p>enum MemoryCategory {<br>    LOW<br>    NORMAL<br>    HIGH<br>    -float multiplier<br>}</p>
-<p>class Registry {</p>
-<p>}</p>
-<p>class Engine {</p>
-<p>}</p>
-<p>class RequestManagerRetriever {</p>
-<p>}</p>
-<p>class MemorySizeCalculator {<br>    -int bitmapPoolSize<br>    -int memoryCacheSize<br>    -int arrayPoolSize<br>}</p>
-<p>class RequestOptions {</p>
-<p>}</p>
-<p>abstract class BaseRequestOptions&lt;T extends BaseRequestOptions<t>&gt; {</t></p>
-<p>}</p>
-<p>interface Key {<br>    +void updateDiskCacheKey()<br>    +boolean equals(Object o)<br>    +int hashCode()<br>}</p>
-<p>class Options {<br>    -ArrayMap&lt;Option&lt;?&gt;, Object&gt; values = new CachedHashCodeArrayMap&lt;&gt;()<br>}</p>
-<p>class Option<t> {<br>    -T defaultValue<br>}</t></p>
-<p>ComponentCallbacks2 &lt;|.. Glide</p>
-<p>ContextWrapper &lt;|– GlideContext</p>
-<p>LifecycleListener &lt;|.. RequestManager</p>
-<p>ModelTypes &lt;|.. RequestManager</p>
-<p>Handler.Callback &lt;|..RequestManagerRetriever</p>
-<p>Cloneable &lt;|.. BaseRequestOptions</p>
-<p>BaseRequestOptions &lt;|– RequestOptions</p>
-<p>Key &lt;|.. Options<br>@enduml<br>‘&gt;</p>
+<h2 id="uml"><a href="#uml" class="headerlink" title="uml"></a>uml</h2><p><img src="http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/guoxf2016/pumls/master/glide.puml" alt="alternative text"></p>
 <h2 id="一个例子"><a href="#一个例子" class="headerlink" title="一个例子"></a>一个例子</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Glide.with(fragment)</span><br><span class="line">    .load(myUrl)</span><br><span class="line">    .into(imageView);</span><br></pre></td></tr></table></figure>
 <p>只是一个最基本的使用Glide加载图片的例子。</p>
 <h2 id="源码追溯"><a href="#源码追溯" class="headerlink" title="源码追溯"></a>源码追溯</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> RequestManager <span class="title">with</span><span class="params">(@NonNull Activity activity)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> getRetriever(activity).get(activity);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> RequestManagerRetriever <span class="title">getRetriever</span><span class="params">(@Nullable Context context)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> Glide.get(context).getRequestManagerRetriever();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Glide <span class="title">get</span><span class="params">(@NonNull Context context)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (glide == <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (Glide.class) &#123;</span><br><span class="line">      <span class="keyword">if</span> (glide == <span class="keyword">null</span>) &#123;</span><br><span class="line">        checkAndInitializeGlide(context);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> glide;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
