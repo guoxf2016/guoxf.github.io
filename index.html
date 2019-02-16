@@ -277,6 +277,331 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/16/Camera2-Open源码分析/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="GuoXf">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Something">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/16/Camera2-Open源码分析/" itemprop="url">
+                  Camera2 Open源码分析
+                </a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-16 18:53:15 / Modified: 18:54:16" itemprop="dateCreated datePublished" datetime="2019-02-16T18:53:15+08:00">2019-02-16</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="Camera2-Open"><a href="#Camera2-Open" class="headerlink" title="Camera2 Open"></a>Camera2 Open</h2><h3 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h3><p>本文主要分析Camera2 的open流程，代码基于Android8.x</p>
+<h3 id="代码追踪"><a href="#代码追踪" class="headerlink" title="代码追踪"></a>代码追踪</h3><p>首先看CameraManager的openCamera方法，代码在frameworks/base/core/java/android/hardware/camera2/CameraManager.java<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RequiresPermission</span>(android.Manifest.permission.CAMERA)</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">openCamera</span><span class="params">(@NonNull String cameraId,</span></span></span><br><span class="line"><span class="function"><span class="params">        @NonNull <span class="keyword">final</span> CameraDevice.StateCallback callback, @Nullable Handler handler)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> CameraAccessException </span>&#123;</span><br><span class="line"></span><br><span class="line">    openCameraForUid(cameraId, callback, handler, USE_CALLING_UID);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>传入了3个参数，分别是cameraId，StateCallback，和一个Handler。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">openCameraForUid</span><span class="params">(@NonNull String cameraId,</span></span></span><br><span class="line"><span class="function"><span class="params">            @NonNull <span class="keyword">final</span> CameraDevice.StateCallback callback, @Nullable Handler handler,</span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">int</span> clientUid)</span></span></span><br><span class="line"><span class="function">            <span class="keyword">throws</span> CameraAccessException </span>&#123;</span><br><span class="line">        <span class="comment">//省略部分代码</span></span><br><span class="line">        openCameraDeviceUserAsync(cameraId, callback, handler, clientUid);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> CameraDevice <span class="title">openCameraDeviceUserAsync</span><span class="params">(String cameraId,</span></span></span><br><span class="line"><span class="function"><span class="params">            CameraDevice.StateCallback callback, Handler handler, <span class="keyword">final</span> <span class="keyword">int</span> uid)</span></span></span><br><span class="line"><span class="function">            <span class="keyword">throws</span> CameraAccessException </span>&#123;</span><br><span class="line">        CameraCharacteristics characteristics = getCameraCharacteristics(cameraId);</span><br><span class="line">        CameraDevice device = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">synchronized</span> (mLock) &#123;</span><br><span class="line">            <span class="comment">//ICameraDeviceUser定义了Camera应用和CameraServer进程IPC的接口</span></span><br><span class="line">            <span class="comment">//Camera应用是Client，CameraServer是Service</span></span><br><span class="line">            ICameraDeviceUser cameraUser = <span class="keyword">null</span>;</span><br><span class="line">            android.hardware.camera2.impl.CameraDeviceImpl deviceImpl =</span><br><span class="line">                    <span class="keyword">new</span> android.hardware.camera2.impl.CameraDeviceImpl(</span><br><span class="line">                        cameraId,</span><br><span class="line">                        callback,</span><br><span class="line">                        handler,</span><br><span class="line">                        characteristics,</span><br><span class="line">                        mContext.getApplicationInfo().targetSdkVersion);</span><br><span class="line">            <span class="comment">//ICameraDeviceCallbacks同样也是IPC接口，不同的是</span></span><br><span class="line">            <span class="comment">//Camera应用是Service，CameraServer是Client</span></span><br><span class="line">            ICameraDeviceCallbacks callbacks = deviceImpl.getCallbacks();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">if</span> (supportsCamera2ApiLocked(cameraId)) &#123;<span class="comment">//最新的hal支持Camera2 api</span></span><br><span class="line">                    <span class="comment">// Use cameraservice's cameradeviceclient implementation for HAL3.2+ devices</span></span><br><span class="line">                    ICameraService cameraService = CameraManagerGlobal.get().getCameraService();</span><br><span class="line">                    <span class="comment">//跨进程调用，CameraService会调用makeClient打开设备</span></span><br><span class="line">                    <span class="comment">//这里还把callbacks传下去了</span></span><br><span class="line">                    cameraUser = cameraService.connectDevice(callbacks, cameraId,</span><br><span class="line">                            mContext.getOpPackageName(), uid);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// Use legacy camera implementation for HAL1 devices</span></span><br><span class="line">                    <span class="keyword">int</span> id;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        id = Integer.parseInt(cameraId);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (NumberFormatException e) &#123;</span><br><span class="line">                        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"Expected cameraId to be numeric, but it was: "</span></span><br><span class="line">                                + cameraId);</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    Log.i(TAG, <span class="string">"Using legacy camera HAL."</span>);</span><br><span class="line">                    cameraUser = CameraDeviceUserShim.connectBinderShim(callbacks, id);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; </span><br><span class="line"></span><br><span class="line">            <span class="comment">// <span class="doctag">TODO:</span> factor out callback to be non-nested, then move setter to constructor</span></span><br><span class="line">            <span class="comment">// For now, calling setRemoteDevice will fire initial</span></span><br><span class="line">            <span class="comment">// onOpened/onUnconfigured callbacks.</span></span><br><span class="line">            <span class="comment">// This function call may post onDisconnected and throw CAMERA_DISCONNECTED if</span></span><br><span class="line">            <span class="comment">// cameraUser dies during setup.</span></span><br><span class="line">            <span class="comment">//CameraService返回的cameraUser和deviceImpl绑定</span></span><br><span class="line">            deviceImpl.setRemoteDevice(cameraUser);</span><br><span class="line">            device = deviceImpl;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> device;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>通过CameraManager.openCamera，Camera应用得到一个CameraDevice实例，它持有一个ICameraDeviceUser的Bp端引用。<br>我们来看一下CameraService的connectDevice函数，代码在frameworks/av/services/camera/libcameraservice/CameraService.cpp<br>跟Camera1的open类似，connectDevice会调用connectHelper，又会调用到makeClient，我们直接看makeClient。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> CAMERA_DEVICE_API_VERSION_3_4:</span><br><span class="line">        <span class="keyword">if</span> (effectiveApiLevel == API_1) &#123; <span class="comment">// Camera1 API route</span></span><br><span class="line">            sp&lt;ICameraClient&gt; tmp = <span class="keyword">static_cast</span>&lt;ICameraClient*&gt;(cameraCb.get());</span><br><span class="line">            *client = <span class="keyword">new</span> Camera2Client(cameraService, tmp, packageName, cameraIdToInt(cameraId),</span><br><span class="line">                    facing, clientPid, clientUid, servicePid, legacyMode);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123; <span class="comment">// Camera2 API route</span></span><br><span class="line">            sp&lt;hardware::camera2::ICameraDeviceCallbacks&gt; tmp =</span><br><span class="line">                    <span class="keyword">static_cast</span>&lt;hardware::camera2::ICameraDeviceCallbacks*&gt;(cameraCb.get());</span><br><span class="line">            *client = <span class="keyword">new</span> CameraDeviceClient(cameraService, tmp, packageName, cameraId,</span><br><span class="line">                    facing, clientPid, clientUid, servicePid);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br></pre></td></tr></table></figure></p>
+<p>我们看到Camera1和Camera2的代码是比较类似的，ICameraDeviceCallbacks等同于ICameraClient，CameraDeviceClient等同于Camera2Client。<br>再看继承关系<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CameraDeviceClient</span> :</span></span><br><span class="line">        <span class="keyword">public</span> Camera2ClientBase&lt;CameraDeviceClientBase&gt;,</span><br><span class="line">        <span class="keyword">public</span> camera2::FrameProcessorBase::FilteredListener&#123;&#125;</span><br><span class="line">        </span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Camera2Client</span> :</span></span><br><span class="line">        <span class="keyword">public</span> Camera2ClientBase&lt;CameraService::Client&gt;&#123;&#125;</span><br></pre></td></tr></table></figure></p>
+<p>CameraDeviceClient和Camera2Client都继承了Camera2ClientBase，而CameraDeviceClientBase和CameraService::Client都继承了<br>CameraService::BasicClient。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">CameraDeviceClientBase</span> :</span></span><br><span class="line">         <span class="keyword">public</span> CameraService::BasicClient,</span><br><span class="line">         <span class="keyword">public</span> hardware::camera2::BnCameraDeviceUser&#123;&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Client</span> :</span> <span class="keyword">public</span> hardware::BnCamera, <span class="keyword">public</span> BasicClient&#123;&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BnCamera</span>:</span> <span class="keyword">public</span> android::BnInterface&lt;ICamera&gt;&#123;&#125;</span><br></pre></td></tr></table></figure></p>
+<p>BnCameraDeviceUser就是ICameraDeviceUser的Bn端，而Camera1的相应的Interface是ICamera。<br>在Camera2ClientBase的构造函数中创建了Camera3Device。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">Camera2ClientBase&lt;TClientBase&gt;::Camera2ClientBase(</span><br><span class="line">        <span class="keyword">const</span> sp&lt;CameraService&gt;&amp; cameraService,</span><br><span class="line">        <span class="keyword">const</span> sp&lt;TCamCallbacks&gt;&amp; remoteCallback,</span><br><span class="line">        <span class="keyword">const</span> String16&amp; clientPackageName,</span><br><span class="line">        <span class="keyword">const</span> String8&amp; cameraId,</span><br><span class="line">        <span class="keyword">int</span> cameraFacing,</span><br><span class="line">        <span class="keyword">int</span> clientPid,</span><br><span class="line">        <span class="keyword">uid_t</span> clientUid,</span><br><span class="line">        <span class="keyword">int</span> servicePid):</span><br><span class="line">        TClientBase(cameraService, remoteCallback, clientPackageName,</span><br><span class="line">                cameraId, cameraFacing, clientPid, clientUid, servicePid),</span><br><span class="line">        mSharedCameraCallbacks(remoteCallback),</span><br><span class="line">        mDeviceVersion(cameraService-&gt;getDeviceVersion(TClientBase::mCameraIdStr)),</span><br><span class="line">        mDeviceActive(<span class="literal">false</span>)</span><br><span class="line">&#123;</span><br><span class="line">    mInitialClientPid = clientPid;</span><br><span class="line">    mDevice = <span class="keyword">new</span> Camera3Device(cameraId);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>所以Camera1和Camera2在CameraServer中打开的CameraDevice实际上是相同的。<br>再构造函数之后，会调用CameraDeviceClient::initialize，转而调用CameraDeviceClient::initializeImpl。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> TProviderPtr&gt;</span><br><span class="line"><span class="keyword">status_t</span> CameraDeviceClient::initializeImpl(TProviderPtr providerPtr) &#123;</span><br><span class="line">    ATRACE_CALL();</span><br><span class="line">    <span class="keyword">status_t</span> res;</span><br><span class="line"></span><br><span class="line">    res = Camera2ClientBase::initialize(providerPtr);<span class="comment">//这里面会调用Camera3Device的initialize</span></span><br><span class="line">    <span class="keyword">if</span> (res != OK) &#123;</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//这里和Camera1是不同的，这里只开启一个线程，而Camera1中则开启了多个线程</span></span><br><span class="line">    String8 threadName;</span><br><span class="line">    mFrameProcessor = <span class="keyword">new</span> FrameProcessorBase(mDevice);</span><br><span class="line">    threadName = String8::format(<span class="string">"CDU-%s-FrameProc"</span>, mCameraIdStr.<span class="built_in">string</span>());</span><br><span class="line">    mFrameProcessor-&gt;run(threadName.<span class="built_in">string</span>());</span><br><span class="line"></span><br><span class="line">    mFrameProcessor-&gt;registerListener(FRAME_PROCESSOR_LISTENER_MIN_ID,</span><br><span class="line">                                      FRAME_PROCESSOR_LISTENER_MAX_ID,</span><br><span class="line">                                      <span class="comment">/*listener*/</span><span class="keyword">this</span>,</span><br><span class="line">                                      <span class="comment">/*sendPartials*/</span><span class="literal">true</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">status_t</span> Camera3Device::initialize(sp&lt;CameraProviderManager&gt; manager) &#123;</span><br><span class="line">    Mutex::<span class="function">Autolock <span class="title">il</span><span class="params">(mInterfaceLock)</span></span>;</span><br><span class="line">    Mutex::<span class="function">Autolock <span class="title">l</span><span class="params">(mLock)</span></span>;</span><br><span class="line"></span><br><span class="line">    sp&lt;ICameraDeviceSession&gt; session;</span><br><span class="line">    <span class="comment">//这里会跟Hal交互打开session</span></span><br><span class="line">    <span class="keyword">status_t</span> res = manager-&gt;openSession(mId.<span class="built_in">string</span>(), <span class="keyword">this</span>,</span><br><span class="line">            <span class="comment">/*out*/</span> &amp;session);</span><br><span class="line"></span><br><span class="line">    res = manager-&gt;getCameraCharacteristics(mId.<span class="built_in">string</span>(), &amp;mDeviceInfo);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">shared_ptr</span>&lt;RequestMetadataQueue&gt; <span class="built_in">queue</span>;</span><br><span class="line">    <span class="keyword">auto</span> requestQueueRet = session-&gt;getCaptureRequestMetadataQueue(</span><br><span class="line">        [&amp;<span class="built_in">queue</span>](<span class="keyword">const</span> <span class="keyword">auto</span>&amp; descriptor) &#123;</span><br><span class="line">            <span class="built_in">queue</span> = <span class="built_in">std</span>::make_shared&lt;RequestMetadataQueue&gt;(descriptor);</span><br><span class="line">            <span class="keyword">if</span> (!<span class="built_in">queue</span>-&gt;isValid() || <span class="built_in">queue</span>-&gt;availableToWrite() &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">                ALOGE(<span class="string">"HAL returns empty request metadata fmq, not use it"</span>);</span><br><span class="line">                <span class="built_in">queue</span> = <span class="literal">nullptr</span>;</span><br><span class="line">                <span class="comment">// don't use the queue onwards.</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">unique_ptr</span>&lt;ResultMetadataQueue&gt;&amp; resQueue = mResultMetadataQueue;</span><br><span class="line">    <span class="keyword">auto</span> resultQueueRet = session-&gt;getCaptureResultMetadataQueue(</span><br><span class="line">        [&amp;resQueue](<span class="keyword">const</span> <span class="keyword">auto</span>&amp; descriptor) &#123;</span><br><span class="line">            resQueue = <span class="built_in">std</span>::make_unique&lt;ResultMetadataQueue&gt;(descriptor);</span><br><span class="line">            <span class="keyword">if</span> (!resQueue-&gt;isValid() || resQueue-&gt;availableToWrite() &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">                ALOGE(<span class="string">"HAL returns empty result metadata fmq, not use it"</span>);</span><br><span class="line">                resQueue = <span class="literal">nullptr</span>;</span><br><span class="line">                <span class="comment">// Don't use the resQueue onwards.</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    <span class="comment">//上面通过CameraSession获得RequestMetadataQueue和ResultMetadataQueue</span></span><br><span class="line">    mInterface = <span class="keyword">new</span> HalInterface(session, <span class="built_in">queue</span>);<span class="comment">//new一个HalInterface</span></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">string</span> providerType;</span><br><span class="line">    mVendorTagId = manager-&gt;getProviderTagIdLocked(mId.<span class="built_in">string</span>());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> initializeCommonLocked();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">status_t</span> Camera3Device::initializeCommonLocked() &#123;</span><br><span class="line">    <span class="comment">//省略部分代码</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/** Create buffer manager */</span></span><br><span class="line">    mBufferManager = <span class="keyword">new</span> Camera3BufferManager();</span><br><span class="line"></span><br><span class="line">    mTagMonitor.initialize(mVendorTagId);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** Start up request queue thread */</span></span><br><span class="line">    mRequestThread = <span class="keyword">new</span> RequestThread(<span class="keyword">this</span>, mStatusTracker, mInterface);</span><br><span class="line">    res = mRequestThread-&gt;run(String8::format(<span class="string">"C3Dev-%s-ReqQueue"</span>, mId.<span class="built_in">string</span>()).<span class="built_in">string</span>());</span><br><span class="line"></span><br><span class="line">    mPreparerThread = <span class="keyword">new</span> PreparerThread();</span><br><span class="line"></span><br><span class="line">    internalUpdateStatusLocked(STATUS_UNCONFIGURED);</span><br><span class="line">    mNextStreamId = <span class="number">0</span>;</span><br><span class="line">    mDummyStreamId = NO_STREAM;</span><br><span class="line">    mNeedConfig = <span class="literal">true</span>;</span><br><span class="line">    mPauseStateNotify = <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>RequestThread线程用来向Hal提交请求。</p>
+<p>我们再回到CameraManager,在CameraService打开Device后，会调用setRemoteDevice方法，将应用层用到的CameraDevice和CameraServer中的CameraDeviceClient绑定。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setRemoteDevice</span><span class="params">(ICameraDeviceUser remoteDevice)</span> <span class="keyword">throws</span> CameraAccessException </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(mInterfaceLock) &#123;</span><br><span class="line">        <span class="comment">// <span class="doctag">TODO:</span> Move from decorator to direct binder-mediated exceptions</span></span><br><span class="line">        <span class="comment">// If setRemoteFailure already called, do nothing</span></span><br><span class="line">        <span class="keyword">if</span> (mInError) <span class="keyword">return</span>;</span><br><span class="line">        <span class="comment">//这里又包装了一层</span></span><br><span class="line">        mRemoteDevice = <span class="keyword">new</span> ICameraDeviceUserWrapper(remoteDevice);</span><br><span class="line"></span><br><span class="line">        IBinder remoteDeviceBinder = remoteDevice.asBinder();</span><br><span class="line">        <span class="comment">// For legacy camera device, remoteDevice is in the same process, and</span></span><br><span class="line">        <span class="comment">// asBinder returns NULL.</span></span><br><span class="line">        <span class="keyword">if</span> (remoteDeviceBinder != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                remoteDeviceBinder.linkToDeath(<span class="keyword">this</span>, <span class="comment">/*flag*/</span> <span class="number">0</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (RemoteException e) &#123;</span><br><span class="line">                CameraDeviceImpl.<span class="keyword">this</span>.mDeviceHandler.post(mCallOnDisconnected);</span><br><span class="line"></span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> CameraAccessException(CameraAccessException.CAMERA_DISCONNECTED,</span><br><span class="line">                        <span class="string">"The camera device has encountered a serious error"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        mDeviceHandler.post(mCallOnOpened);</span><br><span class="line">        mDeviceHandler.post(mCallOnUnconfigured);</span><br><span class="line">        <span class="comment">//通过一开始传进来的handler发送消息</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Runnable mCallOnOpened = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">//省略代码</span></span><br><span class="line">        <span class="comment">//回调一开始传入的StateCallback</span></span><br><span class="line">        mDeviceCallback.onOpened(CameraDeviceImpl.<span class="keyword">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>至此，通过CameraManager打开了相机设备，并且应用传入的StateCallback的onOpened被回调。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>Camera2 的openCamera同Camera1比较类似，在CameraServer进程中的CameraDevice都是Camera3Device，通过Camera3Device跟Hal层交互。<br>不同之处在Camera1打开相机是同步的，Camera2是异步回调的方式。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/16/Camera-Service源码分析/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="GuoXf">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Something">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/16/Camera-Service源码分析/" itemprop="url">
+                  Camera Service源码分析
+                </a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-16 18:50:36 / Modified: 18:52:45" itemprop="dateCreated datePublished" datetime="2019-02-16T18:50:36+08:00">2019-02-16</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="Camera-源码分析"><a href="#Camera-源码分析" class="headerlink" title="Camera 源码分析"></a>Camera 源码分析</h2><h3 id="CameraSerivice"><a href="#CameraSerivice" class="headerlink" title="CameraSerivice"></a>CameraSerivice</h3><p>//以下基于Android8.1代码</p>
+<p>系统启动后会执行/system/bin/cameraserver</p>
+<p>这个程序是由main_cameraServer.cpp生成。</p>
+<p>//framworks/av/camera/cameraserver/main_camerserver.cpp</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc __unused, <span class="keyword">char</span>** argv __unused)</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"></span><br><span class="line"> sp&lt;ProcessState&gt; proc(ProcessState::self());</span><br><span class="line"></span><br><span class="line"> sp&lt;IServiceManager&gt; sm = defaultServiceManager();</span><br><span class="line"></span><br><span class="line"> ALOGI(<span class="string">"ServiceManager: %p"</span>, sm.get());</span><br><span class="line"></span><br><span class="line"> CameraService::instantiate();</span><br><span class="line"></span><br><span class="line"> ProcessState::self()-&gt;startThreadPool();</span><br><span class="line"></span><br><span class="line"> IPCThreadState::self()-&gt;joinThreadPool();</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>CameraService::instantiate();<br>这里我们只看这一行，其他的都是和IPC相关的内容。<br>调用了CameraService的静态函数instantiate，而这个静态函数是从它的父类<br>BinderService继承来的。</p>
+<p>//framworks/native/include/binder/BinderService.h</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">instantiate</span><span class="params">()</span> </span>&#123; publish(); &#125;</span><br><span class="line"><span class="function"><span class="keyword">static</span> status_t <span class="title">publish</span><span class="params">(<span class="keyword">bool</span> allowIsolated = <span class="literal">false</span>)</span> </span>&#123;</span><br><span class="line">     sp&lt;IServiceManager&gt; sm(defaultServiceManager());</span><br><span class="line">      <span class="keyword">return</span> sm-&gt;addService(</span><br><span class="line">              String16(SERVICE::getServiceName()),</span><br><span class="line">              <span class="keyword">new</span> SERVICE(), allowIsolated);</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>new了一个CameraService实例并将其addService到ServiceManager。</p>
+<p>//framworks/av/services/camera/libcameraservice/CameraService.cpp</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">CameraService::CameraService() :</span><br><span class="line">        mEventLog(DEFAULT_EVENT_LOG_LENGTH),</span><br><span class="line">        mNumberOfCameras(<span class="number">0</span>), mNumberOfNormalCameras(<span class="number">0</span>),</span><br><span class="line">        mSoundRef(<span class="number">0</span>), mInitialized(<span class="literal">false</span>) &#123;</span><br><span class="line">    ALOGI(<span class="string">"CameraService started (pid=%d)"</span>, getpid());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">this</span>-&gt;camera_device_status_change = android::camera_device_status_change;</span><br><span class="line">    <span class="keyword">this</span>-&gt;torch_mode_status_change = android::torch_mode_status_change;</span><br><span class="line"></span><br><span class="line">    mServiceLockWrapper = <span class="built_in">std</span>::make_shared&lt;WaitableMutexWrapper&gt;(&amp;mServiceLock);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到CameraService的构造函数只是一些简单的初始化。<br>再看一下CameraService的继承情况。<br>//framworks/av/services/camera/libcameraservice/CameraService.h</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CameraService</span> :</span></span><br><span class="line">    <span class="keyword">public</span> BinderService&lt;CameraService&gt;,</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">virtual</span> ::android::hardware::BnCameraService,</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">virtual</span> IBinder::DeathRecipient,</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">camera_module_callbacks_t</span>,</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">virtual</span> CameraProviderManager::StatusListener</span><br></pre></td></tr></table></figure>
+<p>BinderService提供了Service的创建和发布，BnCameraService是通过ICameraService.aidl<br>生产的类，它继承了BnInterface<icameraservice>,BnInterface<br>又继承了BBinder，BBiner继承了IBinder。所以实际上CameraService<br>是应用进程和camerserver进程IPC通信的服务端实现。</icameraservice></p>
+<p>CameraService的初始化其实还没有结束，我们回看ServiceManager的addService函数。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">virtual</span> status_t            <span class="title">addService</span><span class="params">( <span class="keyword">const</span> String16&amp; name,</span></span></span><br><span class="line"><span class="function"><span class="params">                                            <span class="keyword">const</span> sp&lt;IBinder&gt;&amp; service,</span></span></span><br><span class="line"><span class="function"><span class="params">                                            <span class="keyword">bool</span> allowIsolated = <span class="literal">false</span>)</span> </span>= <span class="number">0</span>;</span><br></pre></td></tr></table></figure>
+<p>可以看到第二个参数是sp类型的引用，</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line">sp&lt;T&gt;::sp(T* other)</span><br><span class="line">        : m_ptr(other) &#123;</span><br><span class="line">    <span class="keyword">if</span> (other)</span><br><span class="line">        other-&gt;incStrong(<span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里可能不是调用这个函数但是都是会调用到other-&gt;incStrong(this);</p>
+<p>other就是CameraService的指针，incStrong函数继承自RefBase。<br>在incStrong函数里会调用RefBase的onFirstRef函数，这里因为多态的关系，<br>实际上调用到了CameraService的onFirstRef。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> CameraService::onFirstRef()</span><br><span class="line">&#123;</span><br><span class="line">   ALOGI(<span class="string">"CameraService process starting"</span>);</span><br><span class="line">    BnCameraService::onFirstRef();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">status_t</span> res = INVALID_OPERATION;</span><br><span class="line"></span><br><span class="line">    res = enumerateProviders();</span><br><span class="line">    <span class="keyword">if</span> (res == OK) &#123;</span><br><span class="line">        mInitialized = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    CameraService::pingCameraServiceProxy();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>res = enumerateProviders();这一行是关键。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">status_t</span> CameraService::enumerateProviders() &#123;</span><br><span class="line">    <span class="keyword">status_t</span> res;</span><br><span class="line">    Mutex::<span class="function">Autolock <span class="title">l</span><span class="params">(mServiceLock)</span></span>;wanc</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">//初始化CameraProviderManager</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">nullptr</span> == mCameraProviderManager.get()) &#123;</span><br><span class="line">        mCameraProviderManager = <span class="keyword">new</span> CameraProviderManager();</span><br><span class="line">        res = mCameraProviderManager-&gt;initialize(<span class="keyword">this</span>);</span><br><span class="line">        <span class="keyword">if</span> (res != OK) &#123;</span><br><span class="line">            ALOGE(<span class="string">"%s: Unable to initialize camera provider manager: %s (%d)"</span>,</span><br><span class="line">                    __FUNCTION__, strerror(-res), res);</span><br><span class="line">            <span class="keyword">return</span> res;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    mNumberOfCameras = mCameraProviderManager-&gt;getCameraCount();</span><br><span class="line">    mNumberOfNormalCameras =</span><br><span class="line">            mCameraProviderManager-&gt;getAPI1CompatibleCameraCount();</span><br><span class="line">    <span class="comment">// Setup vendor tags before we call get_camera_info the first time</span></span><br><span class="line">    <span class="comment">// because HAL might need to setup static vendor keys in get_camera_info</span></span><br><span class="line">    <span class="comment">// <span class="doctag">TODO:</span> maybe put this into CameraProviderManager::initialize()?</span></span><br><span class="line">    mCameraProviderManager-&gt;setUpVendorTags();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; cameraId : mCameraProviderManager-&gt;getCameraDeviceIds()) &#123;</span><br><span class="line">        String8 id8 = String8(cameraId.c_str());</span><br><span class="line">        <span class="keyword">bool</span> cameraFound = <span class="literal">false</span>;</span><br><span class="line">        &#123;</span><br><span class="line"></span><br><span class="line">            Mutex::<span class="function">Autolock <span class="title">lock</span><span class="params">(mCameraStatesLock)</span></span>;</span><br><span class="line">            <span class="keyword">auto</span> iter = mCameraStates.find(id8);</span><br><span class="line">            <span class="keyword">if</span> (iter != mCameraStates.end()) &#123;</span><br><span class="line">                cameraFound = <span class="literal">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!cameraFound) &#123;</span><br><span class="line">            hardware::camera::common::V1_0::CameraResourceCost cost;</span><br><span class="line">            res = mCameraProviderManager-&gt;getResourceCost(cameraId, &amp;cost);</span><br><span class="line">            <span class="keyword">if</span> (res != OK) &#123;</span><br><span class="line">                ALOGE(<span class="string">"Failed to query device resource cost: %s (%d)"</span>, strerror(-res), res);</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="built_in">std</span>::<span class="built_in">set</span>&lt;String8&gt; conflicting;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">size_t</span> i = <span class="number">0</span>; i &lt; cost.conflictingDevices.size(); i++) &#123;</span><br><span class="line">                conflicting.emplace(String8(cost.conflictingDevices[i].c_str()));</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            &#123;</span><br><span class="line">                Mutex::<span class="function">Autolock <span class="title">lock</span><span class="params">(mCameraStatesLock)</span></span>;</span><br><span class="line">                mCameraStates.emplace(id8,</span><br><span class="line">                    <span class="built_in">std</span>::make_shared&lt;CameraState&gt;(id8, cost.resourceCost, conflicting));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//初始化CameraState，并调用onDeviceStatusChanged</span></span><br><span class="line"></span><br><span class="line">        onDeviceStatusChanged(id8, CameraDeviceStatus::PRESENT);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (mFlashlight-&gt;hasFlashUnit(id8)) &#123;</span><br><span class="line">            mTorchStatusMap.add(id8, TorchModeStatus::AVAILABLE_OFF);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的重点是CameraProviderManager的initialize</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">status_t</span> CameraProviderManager::initialize(wp&lt;CameraProviderManager::StatusListener&gt; listener,</span><br><span class="line">        ServiceInteractionProxy* proxy) &#123;</span><br><span class="line">    <span class="built_in">std</span>::lock_guard&lt;<span class="built_in">std</span>::mutex&gt; lock(mInterfaceMutex);</span><br><span class="line">    <span class="keyword">if</span> (proxy == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">        ALOGE(<span class="string">"%s: No valid service interaction proxy provided"</span>, __FUNCTION__);</span><br><span class="line">        <span class="keyword">return</span> BAD_VALUE;</span><br><span class="line">    &#125;</span><br><span class="line">    mListener = listener;</span><br><span class="line">    mServiceProxy = proxy;</span><br><span class="line">    <span class="comment">// Registering will trigger notifications for all already-known providers</span></span><br><span class="line">    <span class="keyword">bool</span> success = mServiceProxy-&gt;registerForNotifications(</span><br><span class="line">        <span class="comment">/* instance name, empty means no filter */</span> <span class="string">""</span>,</span><br><span class="line">        <span class="keyword">this</span>);</span><br><span class="line">    <span class="keyword">if</span> (!success) &#123;</span><br><span class="line">        ALOGE(<span class="string">"%s: Unable to register with hardware service manager for notifications "</span></span><br><span class="line">                <span class="string">"about camera providers"</span>, __FUNCTION__);</span><br><span class="line">        <span class="keyword">return</span> INVALID_OPERATION;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// See if there's a passthrough HAL, but let's not complain if there's not</span></span><br><span class="line">    addProviderLocked(kLegacyProviderName, <span class="comment">/*expected*/</span> <span class="literal">false</span>);</span><br><span class="line">    <span class="comment">//const std::string kLegacyProviderName("legacy/0");</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里调用了addProviderLocked函数，字面理解就是添加Provider。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">status_t</span> CameraProviderManager::addProviderLocked(<span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span>&amp; newProvider, <span class="keyword">bool</span> expected) &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; providerInfo : mProviders) &#123;</span><br><span class="line">        <span class="keyword">if</span> (providerInfo-&gt;mProviderName == newProvider) &#123;</span><br><span class="line">            ALOGW(<span class="string">"%s: Camera provider HAL with name '%s' already registered"</span>, __FUNCTION__,</span><br><span class="line">                    newProvider.c_str());</span><br><span class="line">            <span class="keyword">return</span> ALREADY_EXISTS;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;<span class="comment">//一开始mProvider应该是空的</span></span><br><span class="line"></span><br><span class="line">    sp&lt;provider::V2_4::ICameraProvider&gt; interface;</span><br><span class="line">    interface = mServiceProxy-&gt;getService(newProvider);</span><br><span class="line">    <span class="comment">//virtual sp&lt;hardware::camera::provider::V2_4::ICameraProvider&gt; getService(</span></span><br><span class="line">    <span class="comment">//            const std::string &amp;serviceName) override &#123;</span></span><br><span class="line">    <span class="comment">//        return hardware::camera::provider::V2_4::ICameraProvider::getService(serviceName);</span></span><br><span class="line">    <span class="comment">//    &#125;</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (interface == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (expected) &#123;</span><br><span class="line">            ALOGE(<span class="string">"%s: Camera provider HAL '%s' is not actually available"</span>, __FUNCTION__,</span><br><span class="line">                    newProvider.c_str());</span><br><span class="line">            <span class="keyword">return</span> BAD_VALUE;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> OK;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    sp&lt;ProviderInfo&gt; providerInfo =</span><br><span class="line">            <span class="keyword">new</span> ProviderInfo(newProvider, interface, <span class="keyword">this</span>);</span><br><span class="line">    <span class="keyword">status_t</span> res = providerInfo-&gt;initialize();</span><br><span class="line">    <span class="keyword">if</span> (res != OK) &#123;</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//new ProviderInfo并初始化，然后添加到vector</span></span><br><span class="line">    mProviders.push_back(providerInfo);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>看一下ProviderInfo的initialize函数</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//部分代码</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// Get initial list of camera devices, if any</span></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;<span class="built_in">std</span>::<span class="built_in">string</span>&gt; devices;</span><br><span class="line">    hardware::Return&lt;<span class="keyword">void</span>&gt; ret = mInterface-&gt;getCameraIdList([&amp;status, &amp;devices](</span><br><span class="line">            Status idStatus,</span><br><span class="line">            <span class="keyword">const</span> hardware::hidl_vec&lt;hardware::hidl_string&gt;&amp; cameraDeviceNames) &#123;</span><br><span class="line">        status = idStatus;</span><br><span class="line">        <span class="keyword">if</span> (status == Status::OK) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">size_t</span> i = <span class="number">0</span>; i &lt; cameraDeviceNames.size(); i++) &#123;</span><br><span class="line">                devices.push_back(cameraDeviceNames[i]);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; &#125;);</span><br><span class="line">    <span class="comment">//这里涉及到hidl</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; device : devices) &#123;</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">string</span> id;</span><br><span class="line">        <span class="keyword">status_t</span> res = addDevice(device,</span><br><span class="line">                hardware::camera::common::V1_0::CameraDeviceStatus::PRESENT, &amp;id);</span><br><span class="line">        <span class="keyword">if</span> (res != OK) &#123;</span><br><span class="line">            ALOGE(<span class="string">"%s: Unable to enumerate camera device '%s': %s (%d)"</span>,</span><br><span class="line">                    __FUNCTION__, device.c_str(), strerror(-res), res);</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//addDevice会根据从hal拿到的deviceName解析出来的hal版本来创建DeviceInfo或者DeviceInfo3</span></span><br><span class="line">    <span class="comment">//DeviceInfo会持有android.hardware.camera.device@1.0::ICameraDevice类型的引用</span></span><br><span class="line">    <span class="comment">//DeviceInfo3则会持有android.hardware.camera.device@3.2::ICameraDevice类型的引用</span></span><br><span class="line">    <span class="comment">//相当于hal的device在这里的一个代理</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; device : mDevices) &#123;</span><br><span class="line">        mUniqueCameraIds.insert(device-&gt;mId);</span><br><span class="line">        <span class="keyword">if</span> (device-&gt;isAPI1Compatible()) &#123;</span><br><span class="line">            mUniqueAPI1CompatibleCameraIds.insert(device-&gt;mId);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    mUniqueDeviceCount = mUniqueCameraIds.size();</span><br></pre></td></tr></table></figure>
+<p>以上CameraService的初始化才算完成。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>CameraService的初始化比较关键的逻辑是CameraProviderManager的初始化，CameraProviderManager<br>又创建了ProviderInfo，ProviderInfo的初始化会跟hal层交互拿到DeviceInfo，而DeviceInfo又包含了<br>对Hal层设备的引用。这样就建立起了CameraService和Hal层Camera Device的联系。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/26/Camera-preview/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1647,334 +1972,13 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/09/18/RxJava2-源码阅读2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="GuoXf">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Something">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/09/18/RxJava2-源码阅读2/" itemprop="url">
-                  RxJava2 源码阅读2
-                </a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2018-09-18 21:28:40 / Modified: 21:31:32" itemprop="dateCreated datePublished" datetime="2018-09-18T21:28:40+08:00">2018-09-18</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>本文继续分析RxJava的源码，上一篇文章分析了被观察者发送一个事件的情况，这次我们来看一下发送多个事件的情况。</p>
-<h2 id="一个例子"><a href="#一个例子" class="headerlink" title="一个例子"></a>一个例子</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Flowable.just(<span class="string">"Hello"</span>, <span class="string">"world"</span>)</span><br><span class="line">  .subscribe(<span class="keyword">new</span> Consumer&lt;String&gt;() &#123;</span><br><span class="line">      <span class="meta">@Override</span> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">accept</span><span class="params">(String s)</span> </span>&#123;</span><br><span class="line">          System.out.println(s);</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;);</span><br></pre></td></tr></table></figure>
-<h2 id="源码追溯"><a href="#源码追溯" class="headerlink" title="源码追溯"></a>源码追溯</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)</span><br><span class="line"><span class="meta">@CheckReturnValue</span></span><br><span class="line"><span class="meta">@BackpressureSupport</span>(BackpressureKind.FULL)</span><br><span class="line"><span class="meta">@SchedulerSupport</span>(SchedulerSupport.NONE)</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; <span class="function">Flowable&lt;T&gt; <span class="title">just</span><span class="params">(T item1, T item2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> fromArray(item1, item2);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>发送多个数据时都会调用到fromArray方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@CheckReturnValue</span></span><br><span class="line"><span class="meta">@BackpressureSupport</span>(BackpressureKind.FULL)</span><br><span class="line"><span class="meta">@SchedulerSupport</span>(SchedulerSupport.NONE)</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; <span class="function">Flowable&lt;T&gt; <span class="title">fromArray</span><span class="params">(T... items)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (items.length == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> empty();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (items.length == <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> just(items[<span class="number">0</span>]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> RxJavaPlugins.onAssembly(<span class="keyword">new</span> FlowableFromArray&lt;T&gt;(items));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>fromArray方法实际上返回了一个Flowable的子类FlowableFromArray的实例，注意这个名称和之前的FlowableJust是类似的。<br>同样，FlowableFromArray实现了subscribeActual方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">subscribeActual</span><span class="params">(Subscriber&lt;? <span class="keyword">super</span> T&gt; s)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (s <span class="keyword">instanceof</span> ConditionalSubscriber) &#123;</span><br><span class="line">        s.onSubscribe(<span class="keyword">new</span> ArrayConditionalSubscription&lt;T&gt;(</span><br><span class="line">                (ConditionalSubscriber&lt;? <span class="keyword">super</span> T&gt;)s, array));</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        s.onSubscribe(<span class="keyword">new</span> ArraySubscription&lt;T&gt;(s, array));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如之前分析的，subscribe方法最终会调用subscribeActual方法，而且传入的参数是LambdaSubscriber的实例对象。<br>所以subscribeActual方法走else分支，而ArraySubscription就是和ScalarSubscription相对应的Subscription子类。<br>构造ArraySubscription的两个参数分别是LambdaSubscriber实例对象和一开始传入的字符串数组。<br>再看一下LambdaSubscriber的onSubscribe方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onSubscribe</span><span class="params">(Subscription s)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (SubscriptionHelper.setOnce(<span class="keyword">this</span>, s)) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            onSubscribe.accept(<span class="keyword">this</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">            Exceptions.throwIfFatal(ex);</span><br><span class="line">            s.cancel();</span><br><span class="line">            onError(ex);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>同样这里会间接调用到ArraySubscription的request方法，实际上是继承自它的父类BaseArraySubscription</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">request</span><span class="params">(<span class="keyword">long</span> n)</span> </span>&#123;<span class="comment">//n == Long.MAX_VALUE</span></span><br><span class="line">    <span class="keyword">if</span> (SubscriptionHelper.validate(n)) &#123;</span><br><span class="line">        <span class="keyword">if</span> (BackpressureHelper.add(<span class="keyword">this</span>, n) == <span class="number">0L</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (n == Long.MAX_VALUE) &#123;</span><br><span class="line">                fastPath();</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                slowPath(n);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>我们看一下BackpressureHelper.add</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">long</span> <span class="title">add</span><span class="params">(AtomicLong requested, <span class="keyword">long</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="keyword">long</span> r = requested.get();<span class="comment">//r == 0, n == Long.MAX_VALUE</span></span><br><span class="line">        <span class="keyword">if</span> (r == Long.MAX_VALUE) &#123;</span><br><span class="line">            <span class="keyword">return</span> Long.MAX_VALUE;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">long</span> u = addCap(r, n);<span class="comment">//u ==  Long.Max_VALUE</span></span><br><span class="line">        <span class="keyword">if</span> (requested.compareAndSet(r, u)) &#123;<span class="comment">//request.value == u</span></span><br><span class="line">            <span class="keyword">return</span> r;<span class="comment">// return 0</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>可以看到我们看一下BackpressureHelper.add返回了0，而n == Long.MAX_VALUE</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">fastPath</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    T[] arr = array;<span class="comment">//"Hello", "World"</span></span><br><span class="line">    <span class="keyword">int</span> f = arr.length;</span><br><span class="line">    Subscriber&lt;? <span class="keyword">super</span> T&gt; a = downstream;<span class="comment">//这里就是LambdaSubscriber</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = index; i != f; i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (cancelled) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        T t = arr[i];</span><br><span class="line">        <span class="keyword">if</span> (t == <span class="keyword">null</span>) &#123;</span><br><span class="line">            a.onError(<span class="keyword">new</span> NullPointerException(<span class="string">"array element is null"</span>));</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            a.onNext(t);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (cancelled) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    a.onComplete();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>我们看到实际上就是通过for循环遍历传入的数据数组，依次调用LambdaSubscriber的onNext，也就会调用传入的onNext的accept方法，就会依次打印出”Hello”, “World”.</p>
-<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>发送多个数据和单个数据的处理过程是非常类似的，区别就是单个数据的发布者和订阅分别是FlowableJust和ScalarSubscription，<br>而发送多个数据的发布者是FlowableFromArray，订阅是ArraySubscription，而订阅者都是LambdaSubscriber。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/09/16/RxJava2-源码阅读/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="GuoXf">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Something">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/09/16/RxJava2-源码阅读/" itemprop="url">
-                  RxJava2 源码阅读
-                </a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2018-09-16 17:50:11 / Modified: 19:50:07" itemprop="dateCreated datePublished" datetime="2018-09-16T17:50:11+08:00">2018-09-16</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>本文对RxJava2的源码进行阅读分析.</p>
-<h3 id="一个例子"><a href="#一个例子" class="headerlink" title="一个例子"></a>一个例子</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Flowable.just(<span class="string">"Hello world"</span>)</span><br><span class="line">  .subscribe(<span class="keyword">new</span> Consumer&lt;String&gt;() &#123;</span><br><span class="line">      <span class="meta">@Override</span> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">accept</span><span class="params">(String s)</span> </span>&#123;</span><br><span class="line">          System.out.println(s);</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;);</span><br></pre></td></tr></table></figure>
-<h3 id="源码追溯"><a href="#源码追溯" class="headerlink" title="源码追溯"></a>源码追溯</h3><p>我们知道，Rx主要的思路是一个观察者模式。上面这个简单的例子即是被观察者发送一个数据(“Hello wordl”)，观察者接收这个数据并打印。</p>
-<p>首先我们看一下Flowable的static方法just</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@CheckReturnValue</span></span><br><span class="line"><span class="meta">@BackpressureSupport</span>(BackpressureKind.FULL)</span><br><span class="line"><span class="meta">@SchedulerSupport</span>(SchedulerSupport.NONE)</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; <span class="function">Flowable&lt;T&gt; <span class="title">just</span><span class="params">(T item)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> RxJavaPlugins.onAssembly(<span class="keyword">new</span> FlowableJust&lt;T&gt;(item));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>我们看到这个方法返回了一个Flowable对象，接着</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SuppressWarnings</span>(&#123; <span class="string">"rawtypes"</span>, <span class="string">"unchecked"</span> &#125;)</span><br><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; <span class="function">Flowable&lt;T&gt; <span class="title">onAssembly</span><span class="params">(@NonNull Flowable&lt;T&gt; source)</span> </span>&#123;</span><br><span class="line">    Function&lt;? <span class="keyword">super</span> Flowable, ? extends Flowable&gt; f = onFlowableAssembly;</span><br><span class="line">    <span class="keyword">if</span> (f != <span class="keyword">null</span>) &#123;<span class="comment">//这里f == null</span></span><br><span class="line">        <span class="keyword">return</span> apply(f, source);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> source;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>just方法其实就是new 了一个FlowableJust对象，这里注意这个命名，因为是调用just方法返回的Flowable对象，所以这里的子类名为FlowableJust，还有很多其他同级的类，后面我们会看到。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">FlowableJust</span>&lt;<span class="title">T</span>&gt; <span class="keyword">extends</span> <span class="title">Flowable</span>&lt;<span class="title">T</span>&gt; <span class="keyword">implements</span> <span class="title">ScalarCallable</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> T value;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">FlowableJust</span><span class="params">(<span class="keyword">final</span> T value)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.value = value;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">subscribeActual</span><span class="params">(Subscriber&lt;? <span class="keyword">super</span> T&gt; s)</span> </span>&#123;</span><br><span class="line">        s.onSubscribe(<span class="keyword">new</span> ScalarSubscription&lt;T&gt;(s, value));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> T <span class="title">call</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> value;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>ScalarCallable是一个继承了Callable的接口，所以FlowableJust实现了call方法，<br>subscribeActual是继承自Flowable的抽象方法。</p>
-<p>我们继续看上面的例子，接下来FlowableJust调用了subscribe方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@CheckReturnValue</span></span><br><span class="line"><span class="meta">@BackpressureSupport</span>(BackpressureKind.SPECIAL)</span><br><span class="line"><span class="meta">@SchedulerSupport</span>(SchedulerSupport.NONE)</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> Disposable <span class="title">subscribe</span><span class="params">(Consumer&lt;? <span class="keyword">super</span> T&gt; onNext, Consumer&lt;? <span class="keyword">super</span> Throwable&gt; onError,</span></span></span><br><span class="line"><span class="function"><span class="params">        Action onComplete, Consumer&lt;? <span class="keyword">super</span> Subscription&gt; onSubscribe)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    LambdaSubscriber&lt;T&gt; ls = <span class="keyword">new</span> LambdaSubscriber&lt;T&gt;(onNext, onError, onComplete, onSubscribe);</span><br><span class="line"></span><br><span class="line">    subscribe(ls);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ls;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>new 一个LambdaSubscriber对象，这是FlowableSubscriber的一个具体实现类。FlowableSubscriber又继承自Subscriber</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@BackpressureSupport</span>(BackpressureKind.SPECIAL)</span><br><span class="line"><span class="meta">@SchedulerSupport</span>(SchedulerSupport.NONE)</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">subscribe</span><span class="params">(FlowableSubscriber&lt;? <span class="keyword">super</span> T&gt; s)</span> </span>&#123;</span><br><span class="line">    ObjectHelper.requireNonNull(s, <span class="string">"s is null"</span>);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Subscriber&lt;? <span class="keyword">super</span> T&gt; z = RxJavaPlugins.onSubscribe(<span class="keyword">this</span>, s);</span><br><span class="line">        subscribeActual(z);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (NullPointerException e) &#123; <span class="comment">// NOPMD</span></span><br><span class="line">        <span class="keyword">throw</span> e;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">        Exceptions.throwIfFatal(e);</span><br><span class="line">        RxJavaPlugins.onError(e);</span><br><span class="line"></span><br><span class="line">        NullPointerException npe = <span class="keyword">new</span> NullPointerException(<span class="string">"Actually not, but can't throw other exceptions due to RS"</span>);</span><br><span class="line">        npe.initCause(e);</span><br><span class="line">        <span class="keyword">throw</span> npe;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p> RxJavaPlugins.onSubscribe实际上也没有改变输入的s.接下来也就是调用了FlowableJust的subscribeActual，传入的是一个Subscriber的具体实现类的实例，这里就是LambdaSubscriber。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">subscribeActual</span><span class="params">(Subscriber&lt;? <span class="keyword">super</span> T&gt; s)</span> </span>&#123;</span><br><span class="line">    s.onSubscribe(<span class="keyword">new</span> ScalarSubscription&lt;T&gt;(s, value));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>调用了LambdaSubscriber的onSubscribe方法，传入了一个Subscription的具体实现类ScalarSubscription的一个实例对象。<br>ScalarSubscription继承了AtomicInteger。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onSubscribe</span><span class="params">(Subscription s)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (SubscriptionHelper.setOnce(<span class="keyword">this</span>, s)) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            onSubscribe.accept(<span class="keyword">this</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">            Exceptions.throwIfFatal(ex);</span><br><span class="line">            s.cancel();</span><br><span class="line">            onError(ex);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>因为例子中没有传入onSubscribe， 所以这里的onSubscribe是默认对象FlowableInternalHelper.RequestMax.INSTANCE</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">enum</span> RequestMax implements Consumer&lt;Subscription&gt; &#123;</span><br><span class="line">    INSTANCE;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">accept</span><span class="params">(Subscription t)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        t.request(Long.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>所以onSubscribe.accept(this)实际上调用了LambdaSubscriber的request方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">request</span><span class="params">(<span class="keyword">long</span> n)</span> </span>&#123;</span><br><span class="line">    get().request(n);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这个发现调用了get方法,所以我们会看LambdaSubscriber的onSubscribe方法，<br>SubscriptionHelper.setOnce(this, s)，设置了value</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">setOnce</span><span class="params">(AtomicReference&lt;Subscription&gt; field, Subscription s)</span> </span>&#123;</span><br><span class="line">    ObjectHelper.requireNonNull(s, <span class="string">"s is null"</span>);</span><br><span class="line">    <span class="keyword">if</span> (!field.compareAndSet(<span class="keyword">null</span>, s)) &#123;<span class="comment">//如果filed == null,filed = s</span></span><br><span class="line">        s.cancel();</span><br><span class="line">        <span class="keyword">if</span> (field.get() != CANCELLED) &#123;</span><br><span class="line">            reportSubscriptionSet();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>所以get方法返回的是之前new的 ScalarSubscription<t>(s, value)，这里的s是一个Subscriber，<br>其实就是LambdaSubscriber，这里的value就是一开始just方法传入的”Hello world”。然后看ScalarSubscription的request方法</t></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">request</span><span class="params">(<span class="keyword">long</span> n)</span> </span>&#123;<span class="comment">//Long.MAX_VALUE</span></span><br><span class="line">    <span class="keyword">if</span> (!SubscriptionHelper.validate(n)) &#123;<span class="comment">//n 不能小于0</span></span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (compareAndSet(NO_REQUEST, REQUESTED)) &#123;<span class="comment">//从0置1</span></span><br><span class="line">        Subscriber&lt;? <span class="keyword">super</span> T&gt; s = subscriber;</span><br><span class="line"></span><br><span class="line">        s.onNext(value);</span><br><span class="line">        <span class="keyword">if</span> (get() != CANCELLED) &#123;</span><br><span class="line">            s.onComplete();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>调用了LambdaSubscriber的onNext方法，传入的是”Hello world”.</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onNext</span><span class="params">(T t)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!isDisposed()) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            onNext.accept(t);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">            Exceptions.throwIfFatal(e);</span><br><span class="line">            get().cancel();</span><br><span class="line">            onError(e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>onNext就是例子中传入的Consumer。</p>
-<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>简单来说，Subscriber.onSubscribe(Subscription),会调用Subscribe的request，然后调用到<br>Subscription的request，接着调到Subscriber的onNext.可见Subscription是Subscriber和Publisher的桥梁。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
+  <nav class="pagination">
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
+  </nav>
+
 
 
           </div>
@@ -2015,7 +2019,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">10</span>
+                    <span class="site-state-item-count">12</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
