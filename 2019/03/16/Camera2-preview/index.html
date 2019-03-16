@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=6.4.1" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.4.1">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=6.4.1">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=6.4.1">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.4.1" color="#222">
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '6.4.1',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="Camera2 preview引言本文主要分析Camera2 的preview流程，代码基于Android8.x。 代码追踪在CameraManager调用openCamera成功打开相机设备后，应用传入的CameraDevice.StateCallback会被回调onOpened方法，在onOpened中创建session123cameraDevice.createCaptureRequest(">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Camera2 preview">
+<meta property="og:url" content="http://yoursite.com/2019/03/16/Camera2-preview/index.html">
+<meta property="og:site_name" content="Something">
+<meta property="og:description" content="Camera2 preview引言本文主要分析Camera2 的preview流程，代码基于Android8.x。 代码追踪在CameraManager调用openCamera成功打开相机设备后，应用传入的CameraDevice.StateCallback会被回调onOpened方法，在onOpened中创建session123cameraDevice.createCaptureRequest(">
+<meta property="og:locale" content="default">
+<meta property="og:updated_time" content="2019-03-16T12:24:05.149Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Camera2 preview">
+<meta name="twitter:description" content="Camera2 preview引言本文主要分析Camera2 的preview流程，代码基于Android8.x。 代码追踪在CameraManager调用openCamera成功打开相机设备后，应用传入的CameraDevice.StateCallback会被回调onOpened方法，在onOpened中创建session123cameraDevice.createCaptureRequest(">
+
+
+
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/03/16/Camera2-preview/"/>
+
+
+
+<script type="text/javascript" id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Camera2 preview | Something</title>
+  
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style type="text/css">
+    .use-motion .motion-element,
+    .use-motion .brand,
+    .use-motion .menu-item,
+    .sidebar-inner,
+    .use-motion .post-block,
+    .use-motion .pagination,
+    .use-motion .comments,
+    .use-motion .post-header,
+    .use-motion .post-body,
+    .use-motion .collection-title { opacity: initial; }
+
+    .use-motion .logo,
+    .use-motion .site-title,
+    .use-motion .site-subtitle {
+      opacity: initial;
+      top: initial;
+    }
+
+    .use-motion {
+      .logo-line-before i { left: initial; }
+      .logo-line-after i { right: initial; }
+    }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Something</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+    <a href="/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-home"></i> <br />Home</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+    <a href="/archives/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />Archives</a>
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+    
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/16/Camera2-preview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="GuoXf">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Something">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Camera2 preview
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-16 20:13:30 / Modified: 20:24:05" itemprop="dateCreated datePublished" datetime="2019-03-16T20:13:30+08:00">2019-03-16</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="Camera2-preview"><a href="#Camera2-preview" class="headerlink" title="Camera2 preview"></a>Camera2 preview</h2><h3 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h3><p>本文主要分析Camera2 的preview流程，代码基于Android8.x。</p>
+<h3 id="代码追踪"><a href="#代码追踪" class="headerlink" title="代码追踪"></a>代码追踪</h3><p>在CameraManager调用openCamera成功打开相机设备后，应用传入的CameraDevice.StateCallback会被回调onOpened方法，在onOpened中创建session<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);<span class="comment">//返回CaptureRequest.Builder</span></span><br><span class="line">cameraDevice.createCaptureSession(list, captureSessionCallback, mCameraHandler);</span><br><span class="line"><span class="comment">//list的元素是Surface， captureSessionCallback是CameraCaptureSession.StateCallback</span></span><br></pre></td></tr></table></figure></p>
+<p>templateType 有几种：</p>
+<pre><code>* @see #TEMPLATE_PREVIEW　//预览
+* @see #TEMPLATE_RECORD　// 录像
+* @see #TEMPLATE_STILL_CAPTURE　//拍照
+* @see #TEMPLATE_VIDEO_SNAPSHOT//录像中拍照
+* @see #TEMPLATE_MANUAL //手动？
+</code></pre><p>framworks/base/core/java/android/hardware/camera2/impl/CameraDeviceImpl.java<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> CaptureRequest.<span class="function">Builder <span class="title">createCaptureRequest</span><span class="params">(<span class="keyword">int</span> templateType)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> CameraAccessException </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(mInterfaceLock) &#123;</span><br><span class="line"></span><br><span class="line">        CameraMetadataNative templatedRequest = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">        templatedRequest = mRemoteDevice.createDefaultRequest(templateType);</span><br><span class="line"></span><br><span class="line">        CaptureRequest.Builder builder = <span class="keyword">new</span> CaptureRequest.Builder(</span><br><span class="line">                templatedRequest, <span class="comment">/*reprocess*/</span><span class="keyword">false</span>, CameraCaptureSession.SESSION_ID_NONE);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> builder;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>mRemoteDevice是ICameraDeviceUser的Bp端，根据上一篇分析的openCamera，Bn端是CameraDeviceClient。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">binder::Status CameraDeviceClient::createDefaultRequest(<span class="keyword">int</span> templateId,</span><br><span class="line">        <span class="comment">/*out*/</span></span><br><span class="line">        hardware::camera2::impl::CameraMetadataNative* request)</span><br><span class="line">&#123;</span><br><span class="line">    Mutex::<span class="function">Autolock <span class="title">icl</span><span class="params">(mBinderSerializationLock)</span></span>;</span><br><span class="line"></span><br><span class="line">    CameraMetadata metadata;</span><br><span class="line">    <span class="keyword">status_t</span> err;</span><br><span class="line">    <span class="comment">//mDevice是Camera3Device</span></span><br><span class="line">    <span class="keyword">if</span> ( (err = mDevice-&gt;createDefaultRequest(templateId, &amp;metadata) ) == OK &amp;&amp;</span><br><span class="line">        request != <span class="literal">NULL</span>) &#123;</span><br><span class="line"></span><br><span class="line">        request-&gt;swap(metadata);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>将调用传递到Camera3Deivce。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">status_t</span> Camera3Device::createDefaultRequest(<span class="keyword">int</span> templateId,</span><br><span class="line">        CameraMetadata *request) &#123;</span><br><span class="line"></span><br><span class="line">    Mutex::<span class="function">Autolock <span class="title">il</span><span class="params">(mInterfaceLock)</span></span>;</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        Mutex::<span class="function">Autolock <span class="title">l</span><span class="params">(mLock)</span></span>;</span><br><span class="line">        <span class="comment">//先总缓存中取</span></span><br><span class="line">        <span class="keyword">if</span> (!mRequestTemplateCache[templateId].isEmpty()) &#123;</span><br><span class="line">            *request = mRequestTemplateCache[templateId];</span><br><span class="line">            <span class="keyword">return</span> OK;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">camera_metadata_t</span> *rawRequest;</span><br><span class="line">    <span class="keyword">status_t</span> res = mInterface-&gt;constructDefaultRequestSettings(</span><br><span class="line">            (<span class="keyword">camera3_request_template_t</span>) templateId, &amp;rawRequest);</span><br><span class="line"></span><br><span class="line">    &#123;</span><br><span class="line">        Mutex::<span class="function">Autolock <span class="title">l</span><span class="params">(mLock)</span></span>;</span><br><span class="line">        set_camera_metadata_vendor_id(rawRequest, mVendorTagId);</span><br><span class="line">        <span class="comment">//缓存</span></span><br><span class="line">        mRequestTemplateCache[templateId].acquire(rawRequest);</span><br><span class="line"></span><br><span class="line">        *request = mRequestTemplateCache[templateId];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>传递到Hal层<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">status_t</span> Camera3Device::HalInterface::constructDefaultRequestSettings(</span><br><span class="line">        <span class="keyword">camera3_request_template_t</span> templateId,</span><br><span class="line">        <span class="comment">/*out*/</span> <span class="keyword">camera_metadata_t</span> **requestTemplate) &#123;</span><br><span class="line">    <span class="keyword">status_t</span> res = OK;</span><br><span class="line">    common::V1_0::Status status;</span><br><span class="line">    RequestTemplate id;</span><br><span class="line">    <span class="keyword">switch</span> (templateId) &#123;</span><br><span class="line">        <span class="keyword">case</span> CAMERA3_TEMPLATE_PREVIEW:</span><br><span class="line">            id = RequestTemplate::PREVIEW;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> CAMERA3_TEMPLATE_STILL_CAPTURE:</span><br><span class="line">            id = RequestTemplate::STILL_CAPTURE;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> CAMERA3_TEMPLATE_VIDEO_RECORD:</span><br><span class="line">            id = RequestTemplate::VIDEO_RECORD;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> CAMERA3_TEMPLATE_VIDEO_SNAPSHOT:</span><br><span class="line">            id = RequestTemplate::VIDEO_SNAPSHOT;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> CAMERA3_TEMPLATE_ZERO_SHUTTER_LAG:</span><br><span class="line">            id = RequestTemplate::ZERO_SHUTTER_LAG;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> CAMERA3_TEMPLATE_MANUAL:</span><br><span class="line">            id = RequestTemplate::MANUAL;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="comment">// Unknown template ID</span></span><br><span class="line">            <span class="keyword">return</span> BAD_VALUE;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">auto</span> err = mHidlSession-&gt;constructDefaultRequestSettings(id,</span><br><span class="line">            [&amp;status, &amp;requestTemplate]</span><br><span class="line">            (common::V1_0::Status s, <span class="keyword">const</span> device::V3_2::CameraMetadata&amp; request) &#123;</span><br><span class="line">                status = s;</span><br><span class="line">                <span class="keyword">if</span> (status == common::V1_0::Status::OK) &#123;</span><br><span class="line">                    <span class="keyword">const</span> camera_metadata *r =</span><br><span class="line">                            <span class="keyword">reinterpret_cast</span>&lt;<span class="keyword">const</span> <span class="keyword">camera_metadata_t</span>*&gt;(request.data());</span><br><span class="line">                    <span class="keyword">size_t</span> expectedSize = request.size();</span><br><span class="line">                    <span class="keyword">int</span> ret = validate_camera_metadata_structure(r, &amp;expectedSize);</span><br><span class="line">                    <span class="keyword">if</span> (ret == OK || ret == CAMERA_METADATA_VALIDATION_SHIFTED) &#123;</span><br><span class="line">                        *requestTemplate = clone_camera_metadata(r);</span><br><span class="line">                        <span class="keyword">if</span> (*requestTemplate == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">                            ALOGE(<span class="string">"%s: Unable to clone camera metadata received from HAL"</span>,</span><br><span class="line">                                    __FUNCTION__);</span><br><span class="line">                            status = common::V1_0::Status::INTERNAL_ERROR;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        ALOGE(<span class="string">"%s: Malformed camera metadata received from HAL"</span>, __FUNCTION__);</span><br><span class="line">                        status = common::V1_0::Status::INTERNAL_ERROR;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">    <span class="comment">//mHidlSession是初始化时打开的与Hal层的一个Session</span></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里不继续往下展开，只知道请求hal创建了一个camera_metadata_t的数据。将他包装进CameraMetadata，返回给应用端。应用端用它new CaptureRequest.Builder。实际上会new一个CaptureRequest，保存了CameraMetadata。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">createCaptureSession</span><span class="params">(List&lt;Surface&gt; outputs,</span></span></span><br><span class="line"><span class="function"><span class="params">        CameraCaptureSession.StateCallback callback, Handler handler)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> CameraAccessException </span>&#123;</span><br><span class="line">    List&lt;OutputConfiguration&gt; outConfigurations = <span class="keyword">new</span> ArrayList&lt;&gt;(outputs.size());</span><br><span class="line">    <span class="keyword">for</span> (Surface surface : outputs) &#123;</span><br><span class="line">        outConfigurations.add(<span class="keyword">new</span> OutputConfiguration(surface));</span><br><span class="line">    &#125;</span><br><span class="line">    createCaptureSessionInternal(<span class="keyword">null</span>, outConfigurations, callback, handler,</span><br><span class="line">            <span class="comment">/*operatingMode*/</span>ICameraDeviceUser.NORMAL_MODE);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">createCaptureSessionInternal</span><span class="params">(InputConfiguration inputConfig,</span></span></span><br><span class="line"><span class="function"><span class="params">        List&lt;OutputConfiguration&gt; outputConfigurations,</span></span></span><br><span class="line"><span class="function"><span class="params">        CameraCaptureSession.StateCallback callback, Handler handler,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">int</span> operatingMode)</span> <span class="keyword">throws</span> CameraAccessException </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(mInterfaceLock) &#123;</span><br><span class="line">        <span class="comment">//省略部分代码</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// Fire onConfigured if configureOutputs succeeded, fire onConfigureFailed otherwise.</span></span><br><span class="line">        CameraCaptureSessionCore newSession = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">if</span> (isConstrainedHighSpeed) &#123;</span><br><span class="line">            newSession = <span class="keyword">new</span> CameraConstrainedHighSpeedCaptureSessionImpl(mNextSessionId++,</span><br><span class="line">                    callback, handler, <span class="keyword">this</span>, mDeviceHandler, configureSuccess,</span><br><span class="line">                    mCharacteristics);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;<span class="comment">//普通模式</span></span><br><span class="line">            newSession = <span class="keyword">new</span> CameraCaptureSessionImpl(mNextSessionId++, input,</span><br><span class="line">                    callback, handler, <span class="keyword">this</span>, mDeviceHandler,</span><br><span class="line">                    configureSuccess);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// <span class="doctag">TODO:</span> wait until current session closes, then create the new session</span></span><br><span class="line">        mCurrentSession = newSession;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (pendingException != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> pendingException;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        mSessionStateCallback = mCurrentSession.getDeviceStateCallback();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>new了一个CameraCaptureSessionImpl对象，CameraCaptureSessionImpl.java和CameraDeviceImpl.java在相同目录。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">CameraCaptureSessionImpl(<span class="keyword">int</span> id, Surface input,</span><br><span class="line">            CameraCaptureSession.StateCallback callback, Handler stateHandler,</span><br><span class="line">            android.hardware.camera2.impl.CameraDeviceImpl deviceImpl,</span><br><span class="line">            Handler deviceStateHandler, <span class="keyword">boolean</span> configureSuccess) &#123;</span><br><span class="line"></span><br><span class="line">        mId = id;</span><br><span class="line">        mIdString = String.format(<span class="string">"Session %d: "</span>, mId);</span><br><span class="line"></span><br><span class="line">        mInput = input;</span><br><span class="line">        mStateHandler = checkHandler(stateHandler);</span><br><span class="line">        mStateCallback = createUserStateCallbackProxy(mStateHandler, callback);</span><br><span class="line"></span><br><span class="line">        mDeviceHandler = checkNotNull(deviceStateHandler, <span class="string">"deviceStateHandler must not be null"</span>);</span><br><span class="line">        mDeviceImpl = checkNotNull(deviceImpl, <span class="string">"deviceImpl must not be null"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * Use the same handler as the device's StateCallback for all the internal coming events</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * This ensures total ordering between CameraDevice.StateCallback and</span></span><br><span class="line"><span class="comment">         * CameraDeviceImpl.CaptureCallback events.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        mSequenceDrainer = <span class="keyword">new</span> TaskDrainer&lt;&gt;(mDeviceHandler, <span class="keyword">new</span> SequenceDrainListener(),</span><br><span class="line">                <span class="comment">/*name*/</span><span class="string">"seq"</span>);</span><br><span class="line">        mIdleDrainer = <span class="keyword">new</span> TaskSingleDrainer(mDeviceHandler, <span class="keyword">new</span> IdleDrainListener(),</span><br><span class="line">                <span class="comment">/*name*/</span><span class="string">"idle"</span>);</span><br><span class="line">        mAbortDrainer = <span class="keyword">new</span> TaskSingleDrainer(mDeviceHandler, <span class="keyword">new</span> AbortDrainListener(),</span><br><span class="line">                <span class="comment">/*name*/</span><span class="string">"abort"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// CameraDevice should call configureOutputs and have it finish before constructing us</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (configureSuccess) &#123;</span><br><span class="line">            <span class="comment">//这里会回调createCaptureSession传入的CameraCaptureSession.StateCallback的onConfigured方法，不是直接调用，用到了反射，不清楚这样做的原因。</span></span><br><span class="line">            mStateCallback.onConfigured(<span class="keyword">this</span>);</span><br><span class="line">            <span class="keyword">if</span> (DEBUG) Log.v(TAG, mIdString + <span class="string">"Created session successfully"</span>);</span><br><span class="line">            mConfigureSuccess = <span class="keyword">true</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            mStateCallback.onConfigureFailed(<span class="keyword">this</span>);</span><br><span class="line">            mClosed = <span class="keyword">true</span>; <span class="comment">// do not fire any other callbacks, do not allow any other work</span></span><br><span class="line">            Log.e(TAG, mIdString + <span class="string">"Failed to create capture session; configuration failed"</span>);</span><br><span class="line">            mConfigureSuccess = <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<p>在onConfigured回调中<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cameraCaptureSession.setRepeatingRequest(captureRequest, capturecallback, handler);</span><br></pre></td></tr></table></figure></p>
+<p>captureRequest就是一开始CameraDevice.createCaptureRequest返回的CaptureRequest.Builder.build()创建的，captureCallback是CameraCaptureSession.CaptureCallback。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">setRepeatingRequest</span><span class="params">(CaptureRequest request, CaptureCallback callback,</span></span></span><br><span class="line"><span class="function"><span class="params">        Handler handler)</span> <span class="keyword">throws</span> CameraAccessException </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">synchronized</span> (mDeviceImpl.mInterfaceLock) &#123;</span><br><span class="line">        checkNotClosed();</span><br><span class="line"></span><br><span class="line">        handler = checkHandler(handler, callback);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (DEBUG) &#123;</span><br><span class="line">            Log.v(TAG, mIdString + <span class="string">"setRepeatingRequest - request "</span> + request + <span class="string">", callback "</span> +</span><br><span class="line">                    callback + <span class="string">" handler"</span> + <span class="string">" "</span> + handler);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> addPendingSequence(mDeviceImpl.setRepeatingRequest(request,</span><br><span class="line">                createCaptureCallbackProxy(handler, callback), mDeviceHandler));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用CameraDeviceImpl的setRepeatingRequest, 再调用submitCaptureRequest<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">setRepeatingRequest</span><span class="params">(CaptureRequest request, CaptureCallback callback,</span></span></span><br><span class="line"><span class="function"><span class="params">        Handler handler)</span> <span class="keyword">throws</span> CameraAccessException </span>&#123;</span><br><span class="line">    List&lt;CaptureRequest&gt; requestList = <span class="keyword">new</span> ArrayList&lt;CaptureRequest&gt;();</span><br><span class="line">    requestList.add(request);</span><br><span class="line">    <span class="keyword">return</span> submitCaptureRequest(requestList, callback, handler, <span class="comment">/*streaming*/</span><span class="keyword">true</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">submitCaptureRequest</span><span class="params">(List&lt;CaptureRequest&gt; requestList, CaptureCallback callback,</span></span></span><br><span class="line"><span class="function"><span class="params">            Handler handler, <span class="keyword">boolean</span> repeating)</span> <span class="keyword">throws</span> CameraAccessException </span>&#123;</span><br><span class="line">    <span class="comment">//省略部分代码</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">synchronized</span>(mInterfaceLock) &#123;</span><br><span class="line">            checkIfCameraClosedOrInError();</span><br><span class="line">            <span class="keyword">if</span> (repeating) &#123;</span><br><span class="line">                stopRepeating();</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            SubmitInfo requestInfo;</span><br><span class="line"></span><br><span class="line">            CaptureRequest[] requestArray = requestList.toArray(<span class="keyword">new</span> CaptureRequest[requestList.size()]);</span><br><span class="line">            <span class="comment">//IPC 调用CameraDeviceClient</span></span><br><span class="line">            requestInfo = mRemoteDevice.submitRequestList(requestArray, repeating);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> requestInfo.getRequestId();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line">binder::Status CameraDeviceClient::submitRequestList(</span><br><span class="line">        <span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;hardware::camera2::CaptureRequest&gt;&amp; requests,</span><br><span class="line">        <span class="keyword">bool</span> streaming,</span><br><span class="line">        <span class="comment">/*out*/</span></span><br><span class="line">        hardware::camera2::utils::SubmitInfo *submitInfo) &#123;</span><br><span class="line"></span><br><span class="line">    Mutex::<span class="function">Autolock <span class="title">icl</span><span class="params">(mBinderSerializationLock)</span></span>;</span><br><span class="line"></span><br><span class="line">    List&lt;<span class="keyword">const</span> CameraMetadata&gt; metadataRequestList;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">list</span>&lt;<span class="keyword">const</span> SurfaceMap&gt; surfaceMapList;</span><br><span class="line">    submitInfo-&gt;mRequestId = mRequestIdCounter;</span><br><span class="line">    <span class="keyword">uint32_t</span> loopCounter = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span>&amp;&amp; request: requests) &#123;</span><br><span class="line">        </span><br><span class="line">        <span class="function">CameraMetadata <span class="title">metadata</span><span class="params">(request.mMetadata)</span></span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * Write in the output stream IDs and map from stream ID to surface ID</span></span><br><span class="line"><span class="comment">         * which we calculate from the capture request's list of surface target</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        SurfaceMap surfaceMap;</span><br><span class="line">        Vector&lt;<span class="keyword">int32_t</span>&gt; outputStreamIds;</span><br><span class="line">        <span class="keyword">for</span> (sp&lt;Surface&gt; surface : request.mSurfaceList) &#123;</span><br><span class="line">            <span class="keyword">if</span> (surface == <span class="number">0</span>) <span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">            sp&lt;IGraphicBufferProducer&gt; gbp = surface-&gt;getIGraphicBufferProducer();</span><br><span class="line">            <span class="keyword">int</span> idx = mStreamMap.indexOfKey(IInterface::asBinder(gbp));</span><br><span class="line"></span><br><span class="line">            <span class="keyword">const</span> StreamSurfaceId&amp; streamSurfaceId = mStreamMap.valueAt(idx);</span><br><span class="line">            <span class="keyword">if</span> (surfaceMap.find(streamSurfaceId.streamId()) == surfaceMap.end()) &#123;</span><br><span class="line">                surfaceMap[streamSurfaceId.streamId()] = <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;<span class="keyword">size_t</span>&gt;();</span><br><span class="line">                outputStreamIds.push_back(streamSurfaceId.streamId());</span><br><span class="line">            &#125;</span><br><span class="line">            surfaceMap[streamSurfaceId.streamId()].push_back(streamSurfaceId.surfaceId());</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        metadata.update(ANDROID_REQUEST_OUTPUT_STREAMS, &amp;outputStreamIds[<span class="number">0</span>],</span><br><span class="line">                        outputStreamIds.size());</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (request.mIsReprocess) &#123; <span class="comment">//preview false</span></span><br><span class="line">            metadata.update(ANDROID_REQUEST_INPUT_STREAMS, &amp;mInputStream.id, <span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        metadata.update(ANDROID_REQUEST_ID, &amp;(submitInfo-&gt;mRequestId), <span class="comment">/*size*/</span><span class="number">1</span>);</span><br><span class="line">        loopCounter++; <span class="comment">// loopCounter starts from 1</span></span><br><span class="line"></span><br><span class="line">        metadataRequestList.push_back(metadata);</span><br><span class="line">        surfaceMapList.push_back(surfaceMap);</span><br><span class="line">    &#125;</span><br><span class="line">    mRequestIdCounter++;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (streaming) &#123;</span><br><span class="line">        err = mDevice-&gt;setStreamingRequestList(metadataRequestList, surfaceMapList,</span><br><span class="line">                &amp;(submitInfo-&gt;mLastFrameNumber));</span><br><span class="line">        <span class="keyword">if</span> (err != OK) &#123;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            Mutex::Autolock idLock(mStreamingRequestIdLock);</span><br><span class="line">            mStreamingRequestId = submitInfo-&gt;mRequestId;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        err = mDevice-&gt;captureList(metadataRequestList, surfaceMapList,</span><br><span class="line">                &amp;(submitInfo-&gt;mLastFrameNumber));</span><br><span class="line">        <span class="keyword">if</span> (err != OK) &#123;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对Request做一定处理后交个hal</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">status_t</span> Camera3Device::setStreamingRequest(<span class="keyword">const</span> CameraMetadata &amp;request,</span><br><span class="line">                                            <span class="keyword">int64_t</span>* <span class="comment">/*lastFrameNumber*/</span>) &#123;</span><br><span class="line">    List&lt;<span class="keyword">const</span> CameraMetadata&gt; requests;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">list</span>&lt;<span class="keyword">const</span> SurfaceMap&gt; surfaceMaps;</span><br><span class="line">    convertToRequestList(requests, surfaceMaps, request);</span><br><span class="line">    <span class="keyword">return</span> setStreamingRequestList(requests, <span class="comment">/*surfaceMap*/</span>surfaceMaps,</span><br><span class="line">                                   <span class="comment">/*lastFrameNumber*/</span><span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">status_t</span> Camera3Device::submitRequestsHelper(</span><br><span class="line">        <span class="keyword">const</span> List&lt;<span class="keyword">const</span> CameraMetadata&gt; &amp;requests,</span><br><span class="line">        <span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">list</span>&lt;<span class="keyword">const</span> SurfaceMap&gt; &amp;surfaceMaps,</span><br><span class="line">        <span class="keyword">bool</span> repeating,<span class="comment">//true</span></span><br><span class="line">        <span class="comment">/*out*/</span></span><br><span class="line">        <span class="keyword">int64_t</span> *lastFrameNumber) &#123;</span><br><span class="line">    Mutex::<span class="function">Autolock <span class="title">il</span><span class="params">(mInterfaceLock)</span></span>;</span><br><span class="line">    Mutex::<span class="function">Autolock <span class="title">l</span><span class="params">(mLock)</span></span>;</span><br><span class="line"></span><br><span class="line">    RequestList requestList;</span><br><span class="line">    <span class="comment">//创建CaptureRequest</span></span><br><span class="line">    res = convertMetadataListToRequestListLocked(requests, surfaceMaps,</span><br><span class="line">            repeating, <span class="comment">/*out*/</span>&amp;requestList);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (repeating) &#123;</span><br><span class="line">        res = mRequestThread-&gt;setRepeatingRequests(requestList, lastFrameNumber);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        res = mRequestThread-&gt;queueRequestList(requestList, lastFrameNumber);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在RequestThread线程中将Request再转换成camera3_capture_request_t，然后调用Camera3Device::RequestThread::sendRequestsBatch()，里面会调用Camera3Device::HalInterface::processBatchCaptureRequests，<br>再进一步包装Camera3Device::HalInterface::wrapAsHidlRequest成device::V3_2::CaptureRequest，<br>再通过HIDL调用CameraDeviceSession的processCaptureRequest。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> err = mHidlSession-&gt;processCaptureRequest(captureRequests, cachesToRemove,</span><br><span class="line">            [&amp;status, &amp;numRequestProcessed] (<span class="keyword">auto</span> s, <span class="keyword">uint32_t</span> n) &#123;</span><br><span class="line">                status = s;</span><br><span class="line">                *numRequestProcessed = n;</span><br><span class="line">            &#125;);</span><br></pre></td></tr></table></figure>
+<p>hal会调用到QCamera3HardwareInterface::orchestrateRequest，处理请求后要向CameraService返回Result。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> QCamera3HardwareInterface::orchestrateResult(</span><br><span class="line">                    <span class="keyword">camera3_capture_result_t</span> *result)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">//省略部分代码</span></span><br><span class="line">    result-&gt;frame_number = frameworkFrameNumber;</span><br><span class="line">    mCallbackOps-&gt;process_capture_result(mCallbackOps, result);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>会调用到CameraDeviceSession::sProcessCaptureResult，然后调用CameraDeviceSession::ResultBatcher::processCaptureResult，然后调用CameraDeviceSession::ResultBatcher::processOneCaptureResult，然后<br>CameraDeviceSession::ResultBatcher::invokeProcessCaptureResultCallback，然后会hidl调用ICameraDeviceCallback的processCaptureResult，传递到CameraServer进程。实际上ICameraDeviceCallback的服务端就是Camera3Device。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">hardware::Return&lt;<span class="keyword">void</span>&gt; Camera3Device::processCaptureResult(</span><br><span class="line">        <span class="keyword">const</span> hardware::hidl_vec&lt;</span><br><span class="line">                hardware::camera::device::V3_2::CaptureResult&gt;&amp; results) &#123;</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; result : results) &#123;</span><br><span class="line">        processOneCaptureResultLocked(result);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> hardware::Void();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在OpenCamera中CameraDeviceClient::initializeImpl函数中</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">String8 threadName;</span><br><span class="line">   mFrameProcessor = <span class="keyword">new</span> FrameProcessorBase(mDevice);</span><br><span class="line">   threadName = String8::format(<span class="string">"CDU-%s-FrameProc"</span>, mCameraIdStr.<span class="built_in">string</span>());</span><br><span class="line">   mFrameProcessor-&gt;run(threadName.<span class="built_in">string</span>());</span><br><span class="line"></span><br><span class="line">   mFrameProcessor-&gt;registerListener(FRAME_PROCESSOR_LISTENER_MIN_ID,</span><br><span class="line">                                     FRAME_PROCESSOR_LISTENER_MAX_ID,</span><br><span class="line">                                     <span class="comment">/*listener*/</span><span class="keyword">this</span>,</span><br><span class="line">                                     <span class="comment">/*sendPartials*/</span><span class="literal">true</span>);</span><br></pre></td></tr></table></figure>
+<p>Camera3Device::processCaptureResult会唤醒 mFrameProcessor线程， 并回调onResultAvailable函数。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> CameraDeviceClient::onResultAvailable(<span class="keyword">const</span> CaptureResult&amp; result) &#123;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Thread-safe. No lock necessary.</span></span><br><span class="line">    sp&lt;hardware::camera2::ICameraDeviceCallbacks&gt; remoteCb = mRemoteCallback;</span><br><span class="line">    <span class="keyword">if</span> (remoteCb != <span class="literal">NULL</span>) &#123;</span><br><span class="line">        remoteCb-&gt;onResultReceived(result.mMetadata, result.mResultExtras);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>再通过IPC回调应用进程的onResultReceived方法。注意这里hardware::camera2::ICameraDeviceCallbacks和前面说的hardware::camera::device::V3_2::ICameraDeviceCallback是不同的，一个是CameraServer和Hal的IPC接口，一个是CameraServer和应用进程的IPC接口。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (isPartialResult) &#123;</span><br><span class="line">                    <span class="keyword">final</span> CaptureResult resultAsCapture =</span><br><span class="line">                            <span class="keyword">new</span> CaptureResult(result, request, resultExtras);</span><br><span class="line">                    <span class="comment">// Partial result</span></span><br><span class="line">                    resultDispatch = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                            <span class="keyword">if</span> (!CameraDeviceImpl.<span class="keyword">this</span>.isClosed()) &#123;</span><br><span class="line">                                <span class="keyword">if</span> (holder.hasBatchedOutputs()) &#123;</span><br><span class="line">                                    <span class="comment">// Send derived onCaptureProgressed for requests within</span></span><br><span class="line">                                    <span class="comment">// the batch.</span></span><br><span class="line">                                    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; holder.getRequestCount(); i++) &#123;</span><br><span class="line">                                        CameraMetadataNative resultLocal =</span><br><span class="line">                                                <span class="keyword">new</span> CameraMetadataNative(resultCopy);</span><br><span class="line">                                        CaptureResult resultInBatch = <span class="keyword">new</span> CaptureResult(</span><br><span class="line">                                                resultLocal, holder.getRequest(i), resultExtras);</span><br><span class="line"></span><br><span class="line">                                        holder.getCallback().onCaptureProgressed(</span><br><span class="line">                                            CameraDeviceImpl.<span class="keyword">this</span>,</span><br><span class="line">                                            holder.getRequest(i),</span><br><span class="line">                                            resultInBatch);</span><br><span class="line">                                    &#125;</span><br><span class="line">                                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                                    holder.getCallback().onCaptureProgressed(</span><br><span class="line">                                        CameraDeviceImpl.<span class="keyword">this</span>,</span><br><span class="line">                                        request,</span><br><span class="line">                                        resultAsCapture);</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;;</span><br><span class="line">                    finalResult = resultAsCapture;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    List&lt;CaptureResult&gt; partialResults =</span><br><span class="line">                            mFrameNumberTracker.popPartialResults(frameNumber);</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">final</span> <span class="keyword">long</span> sensorTimestamp =</span><br><span class="line">                            result.get(CaptureResult.SENSOR_TIMESTAMP);</span><br><span class="line">                    <span class="keyword">final</span> Range&lt;Integer&gt; fpsRange =</span><br><span class="line">                            request.get(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE);</span><br><span class="line">                    <span class="keyword">final</span> <span class="keyword">int</span> subsequenceId = resultExtras.getSubsequenceId();</span><br><span class="line">                    <span class="keyword">final</span> TotalCaptureResult resultAsCapture = <span class="keyword">new</span> TotalCaptureResult(result,</span><br><span class="line">                            request, resultExtras, partialResults, holder.getSessionId());</span><br><span class="line">                    <span class="comment">// Final capture result</span></span><br><span class="line">                    resultDispatch = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                            <span class="keyword">if</span> (!CameraDeviceImpl.<span class="keyword">this</span>.isClosed())&#123;</span><br><span class="line">                                <span class="keyword">if</span> (holder.hasBatchedOutputs()) &#123;</span><br><span class="line">                                    <span class="comment">// Send derived onCaptureCompleted for requests within</span></span><br><span class="line">                                    <span class="comment">// the batch.</span></span><br><span class="line">                                    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; holder.getRequestCount(); i++) &#123;</span><br><span class="line">                                        resultCopy.set(CaptureResult.SENSOR_TIMESTAMP,</span><br><span class="line">                                                sensorTimestamp - (subsequenceId - i) *</span><br><span class="line">                                                NANO_PER_SECOND/fpsRange.getUpper());</span><br><span class="line">                                        CameraMetadataNative resultLocal =</span><br><span class="line">                                                <span class="keyword">new</span> CameraMetadataNative(resultCopy);</span><br><span class="line">                                        TotalCaptureResult resultInBatch = <span class="keyword">new</span> TotalCaptureResult(</span><br><span class="line">                                            resultLocal, holder.getRequest(i), resultExtras,</span><br><span class="line">                                            partialResults, holder.getSessionId());</span><br><span class="line"></span><br><span class="line">                                        holder.getCallback().onCaptureCompleted(</span><br><span class="line">                                            CameraDeviceImpl.<span class="keyword">this</span>,</span><br><span class="line">                                            holder.getRequest(i),</span><br><span class="line">                                            resultInBatch);</span><br><span class="line">                                    &#125;</span><br><span class="line">                                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                                    holder.getCallback().onCaptureCompleted(</span><br><span class="line">                                        CameraDeviceImpl.<span class="keyword">this</span>,</span><br><span class="line">                                        request,</span><br><span class="line">                                        resultAsCapture);</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;;</span><br><span class="line">                    finalResult = resultAsCapture;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                holder.getHandler().post(resultDispatch);</span><br></pre></td></tr></table></figure>
+<p>会回调到onCaptureProgressed或者onCaptureCompleted。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>以上就是Camera2的preview流程，中间省略了很多复杂的细节，大体的架构跟openCamera是一样的，还是应用进程，CameraServer进程和Hal进程3层的交互。请求是有应用发给CameraServer再由CameraServer发给Hal，Result则是相反的顺序。</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/16/Camera2-Open源码分析/" rel="next" title="Camera2 Open源码分析">
+                <i class="fa fa-chevron-left"></i> Camera2 Open源码分析
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/16/Camera-provider-service/" rel="prev" title="Camera provider service">
+                Camera provider service <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">GuoXf</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">14</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">6</span>
+                    <span class="site-state-item-name">tags</span>
+                  
+                </div>
+              
+            </nav>
+          
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Camera2-preview"><span class="nav-number">1.</span> <span class="nav-text">Camera2 preview</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#引言"><span class="nav-number">1.1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代码追踪"><span class="nav-number">1.2.</span> <span class="nav-text">代码追踪</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#小结"><span class="nav-number">1.3.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">GuoXf</span>
+
+  
+
+  
+</div>
+
+
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> v3.7.1</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a class="theme-link" target="_blank" href="https://theme-next.org">NexT.Muse</a> v6.4.1</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+	
+    
+
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=6.4.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=6.4.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.4.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.4.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=6.4.1"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

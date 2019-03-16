@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=6.4.1" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.4.1">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=6.4.1">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=6.4.1">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.4.1" color="#222">
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '6.4.1',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="Camera provider Service 启动流程引言本文整理Camera Provider Service的启动流程，代码基于Android8.x。 代码追踪启动脚本android.hardware.camera.provider@2.4-service.rc会执行可执行程序/vendor/bin/hw/android.hardware.camera.provider@2.4-servic">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Camera provider service">
+<meta property="og:url" content="http://yoursite.com/2019/03/16/Camera-provider-service/index.html">
+<meta property="og:site_name" content="Something">
+<meta property="og:description" content="Camera provider Service 启动流程引言本文整理Camera Provider Service的启动流程，代码基于Android8.x。 代码追踪启动脚本android.hardware.camera.provider@2.4-service.rc会执行可执行程序/vendor/bin/hw/android.hardware.camera.provider@2.4-servic">
+<meta property="og:locale" content="default">
+<meta property="og:updated_time" content="2019-03-16T12:24:10.774Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Camera provider service">
+<meta name="twitter:description" content="Camera provider Service 启动流程引言本文整理Camera Provider Service的启动流程，代码基于Android8.x。 代码追踪启动脚本android.hardware.camera.provider@2.4-service.rc会执行可执行程序/vendor/bin/hw/android.hardware.camera.provider@2.4-servic">
+
+
+
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/03/16/Camera-provider-service/"/>
+
+
+
+<script type="text/javascript" id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Camera provider service | Something</title>
+  
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style type="text/css">
+    .use-motion .motion-element,
+    .use-motion .brand,
+    .use-motion .menu-item,
+    .sidebar-inner,
+    .use-motion .post-block,
+    .use-motion .pagination,
+    .use-motion .comments,
+    .use-motion .post-header,
+    .use-motion .post-body,
+    .use-motion .collection-title { opacity: initial; }
+
+    .use-motion .logo,
+    .use-motion .site-title,
+    .use-motion .site-subtitle {
+      opacity: initial;
+      top: initial;
+    }
+
+    .use-motion {
+      .logo-line-before i { left: initial; }
+      .logo-line-after i { right: initial; }
+    }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="default">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Something</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+    <a href="/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-home"></i> <br />Home</a>
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+    <a href="/archives/" rel="section">
+      <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />Archives</a>
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+    
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/16/Camera-provider-service/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="GuoXf">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Something">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Camera provider service
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-16 20:19:08 / Modified: 20:24:10" itemprop="dateCreated datePublished" datetime="2019-03-16T20:19:08+08:00">2019-03-16</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Camera-provider-Service-启动流程"><a href="#Camera-provider-Service-启动流程" class="headerlink" title="Camera provider Service 启动流程"></a>Camera provider Service 启动流程</h3><h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>本文整理Camera Provider Service的启动流程，代码基于Android8.x。</p>
+<h3 id="代码追踪"><a href="#代码追踪" class="headerlink" title="代码追踪"></a>代码追踪</h3><p>启动脚本<br><a href="mailto:android.hardware.camera.provider@2.4-service.rc" target="_blank" rel="noopener">android.hardware.camera.provider@2.4-service.rc</a><br>会执行可执行程序<a href="mailto:/vendor/bin/hw/android.hardware.camera.provider@2.4-service" target="_blank" rel="noopener">/vendor/bin/hw/android.hardware.camera.provider@2.4-service</a><br>对应的main函数在hardware/interfaces/camera/provider/2.4/default/service.cpp<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// The camera HAL may communicate to other vendor components via</span></span><br><span class="line">    <span class="comment">// /dev/vndbinder</span></span><br><span class="line">    android::ProcessState::initWithDriver(<span class="string">"/dev/vndbinder"</span>);</span><br><span class="line">    <span class="keyword">return</span> defaultPassthroughServiceImplementation&lt;ICameraProvider&gt;(<span class="string">"legacy/0"</span>, <span class="comment">/*maxThreads*/</span> <span class="number">6</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>initWithDriver是binder相关的初始化，会打开binder设备，mmap。<br>注意这里的ProcessState是android namespace 下面的， 也就是frameworks/native/libs/binder/include/binder/ProcessState.h声明的类。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="class"><span class="keyword">class</span> <span class="title">Interface</span>&gt;</span></span><br><span class="line"><span class="class">__<span class="title">attribute__</span>((<span class="title">warn_unused_result</span>))</span></span><br><span class="line"><span class="class"><span class="title">status_t</span> <span class="title">defaultPassthroughServiceImplementation</span>(<span class="title">std</span>:</span>:<span class="built_in">string</span> name,</span><br><span class="line">                                            <span class="keyword">size_t</span> maxThreads = <span class="number">1</span>) &#123;</span><br><span class="line">    configureRpcThreadpool(maxThreads, <span class="literal">true</span>);</span><br><span class="line">    <span class="keyword">status_t</span> result = registerPassthroughServiceImplementation&lt;Interface&gt;(name);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (result != OK) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    joinRpcThreadpool();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>///dev/hwbinder<br>configureRpcThreadpool设置binder线程池大小，这里会打开另一个binder设备/dev/hwbinder，并mmap。<br>因为又初始化了一个ProcessState，但是这个ProcessState是在system/libhwbinder/include/hwbinder/ProcessState.h中声明，它的namespace是android::hardware。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="class"><span class="keyword">class</span> <span class="title">Interface</span>&gt;</span></span><br><span class="line"><span class="class">__<span class="title">attribute__</span>((<span class="title">warn_unused_result</span>))</span></span><br><span class="line"><span class="class"><span class="title">status_t</span> <span class="title">registerPassthroughServiceImplementation</span>(</span></span><br><span class="line"><span class="class">        <span class="title">std</span>:</span>:<span class="built_in">string</span> name = <span class="string">"default"</span>) &#123;</span><br><span class="line">    sp&lt;Interface&gt; service = Interface::getService(name, <span class="literal">true</span> <span class="comment">/* getStub */</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">status_t</span> status = service-&gt;registerAsService(name);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> status;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>ICameraProvider::getService代码在out/soong/.intermediates/hardware/interfaces/camera/provider/2.4/android.hardware.camera.provider@2.4_genc++/gen/android/hardware/camera/provider/2.4/CameraProviderAll.cpp<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">::android::sp&lt;ICameraProvider&gt; ICameraProvider::getService(<span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span> &amp;serviceName, <span class="keyword">const</span> <span class="keyword">bool</span> getStub) &#123;</span><br><span class="line">    <span class="keyword">using</span> ::android::hardware::defaultServiceManager;</span><br><span class="line">    <span class="keyword">using</span> ::android::hardware::details::waitForHwService;</span><br><span class="line">    <span class="keyword">using</span> ::android::hardware::getPassthroughServiceManager;</span><br><span class="line">    <span class="keyword">using</span> ::android::hardware::Return;</span><br><span class="line">    <span class="keyword">using</span> ::android::sp;</span><br><span class="line">    <span class="keyword">using</span> Transport = ::android::hidl::manager::V1_0::IServiceManager::Transport;</span><br><span class="line"></span><br><span class="line">    sp&lt;ICameraProvider&gt; iface = <span class="literal">nullptr</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> sp&lt;::android::hidl::manager::V1_0::IServiceManager&gt; sm = defaultServiceManager();</span><br><span class="line">    <span class="keyword">if</span> (sm == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">        ALOGE(<span class="string">"getService: defaultServiceManager() is null"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Return&lt;Transport&gt; transportRet = sm-&gt;getTransport(ICameraProvider::descriptor, serviceName);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!transportRet.isOk()) &#123;</span><br><span class="line">        ALOGE(<span class="string">"getService: defaultServiceManager()-&gt;getTransport returns %s"</span>, transportRet.description().c_str());</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    Transport transport = transportRet;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">bool</span> vintfHwbinder = (transport == Transport::HWBINDER);</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">bool</span> vintfPassthru = (transport == Transport::PASSTHROUGH);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (getStub || vintfPassthru || vintfLegacy) &#123;<span class="comment">//getStub == true</span></span><br><span class="line">        <span class="keyword">const</span> sp&lt;::android::hidl::manager::V1_0::IServiceManager&gt; pm = getPassthroughServiceManager();</span><br><span class="line">        <span class="keyword">if</span> (pm != <span class="literal">nullptr</span>) &#123;</span><br><span class="line">            Return&lt;sp&lt;::android::hidl::base::V1_0::IBase&gt;&gt; ret = </span><br><span class="line">                    pm-&gt;get(ICameraProvider::descriptor, serviceName);</span><br><span class="line">            <span class="keyword">if</span> (ret.isOk()) &#123;</span><br><span class="line">                sp&lt;::android::hidl::base::V1_0::IBase&gt; baseInterface = ret;</span><br><span class="line">                <span class="keyword">if</span> (baseInterface != <span class="literal">nullptr</span>) &#123;</span><br><span class="line">                    iface = ICameraProvider::castFrom(baseInterface);</span><br><span class="line">                    <span class="keyword">if</span> (!getStub || trebleTestingOverride) &#123;</span><br><span class="line">                        iface = <span class="keyword">new</span> BsCameraProvider(iface);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> iface;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>getService实际上返回了ICameraProvider实例。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">::android::<span class="keyword">status_t</span> ICameraProvider::registerAsService(<span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span> &amp;serviceName) &#123;</span><br><span class="line">    ::android::hardware::details::onRegistration(<span class="string">"android.hardware.camera.provider@2.4"</span>, <span class="string">"ICameraProvider"</span>, serviceName);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> ::android::sp&lt;::android::hidl::manager::V1_0::IServiceManager&gt; sm</span><br><span class="line">            = ::android::hardware::defaultServiceManager();</span><br><span class="line">    ::android::hardware::Return&lt;<span class="keyword">bool</span>&gt; ret = sm-&gt;add(serviceName.c_str(), <span class="keyword">this</span>);</span><br><span class="line">    <span class="keyword">return</span> ret.isOk() &amp;&amp; ret ? ::android::OK : ::android::UNKNOWN_ERROR;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从sm-&gt;add 的代码来看，什么都没做。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Return&lt;<span class="keyword">bool</span>&gt; add(<span class="keyword">const</span> hidl_string&amp; <span class="comment">/* name */</span>,</span><br><span class="line">                 <span class="keyword">const</span> sp&lt;IBase&gt;&amp; <span class="comment">/* service */</span>) override &#123;</span><br><span class="line">    LOG(FATAL) &lt;&lt; <span class="string">"Cannot register services with passthrough service manager."</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>暂时不理解passthrough是什么意思。<br>回到defaultPassthroughServiceImplementation，最后要调用joinRpcThreadpool。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">joinBinderRpcThreadpool</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    IPCThreadState::self()-&gt;joinThreadPool();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> IPCThreadState::joinThreadPool(<span class="keyword">bool</span> isMain)<span class="comment">//isMain == true</span></span><br><span class="line">&#123;</span><br><span class="line">    mOut.writeInt32(isMain ? BC_ENTER_LOOPER : BC_REGISTER_LOOPER);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">status_t</span> result;</span><br><span class="line">    <span class="comment">//这个循环会不断从binder读取命令并执行</span></span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        processPendingDerefs();</span><br><span class="line">        <span class="comment">// now get the next command to be processed, waiting if necessary</span></span><br><span class="line">        result = getAndExecuteCommand();</span><br><span class="line"></span><br><span class="line">    &#125; <span class="keyword">while</span> (result != -ECONNREFUSED &amp;&amp; result != -EBADF);</span><br><span class="line">    mOut.writeInt32(BC_EXIT_LOOPER);</span><br><span class="line">    talkWithDriver(<span class="literal">false</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以上，ICameraProvider的Server端就启动完成了。<br>似乎registerPassthroughServiceImplementation好像没什么用啊。</p>
+<p>具体的实现在hardware/interfaces/camera/provider/2.4/default/CameraProvider.cpp。</p>
+<p>再详细看一下getService的逻辑</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (getStub || vintfPassthru || vintfLegacy) &#123;<span class="comment">//getStub == true</span></span><br><span class="line">        <span class="keyword">const</span> sp&lt;::android::hidl::manager::V1_0::IServiceManager&gt; pm = getPassthroughServiceManager();</span><br><span class="line">        <span class="keyword">if</span> (pm != <span class="literal">nullptr</span>) &#123;</span><br><span class="line">            Return&lt;sp&lt;::android::hidl::base::V1_0::IBase&gt;&gt; ret = </span><br><span class="line">                    pm-&gt;get(ICameraProvider::descriptor, serviceName);</span><br><span class="line">            <span class="keyword">if</span> (ret.isOk()) &#123;</span><br><span class="line">                sp&lt;::android::hidl::base::V1_0::IBase&gt; baseInterface = ret;</span><br><span class="line">                <span class="keyword">if</span> (baseInterface != <span class="literal">nullptr</span>) &#123;</span><br><span class="line">                    iface = ICameraProvider::castFrom(baseInterface);</span><br><span class="line">                    <span class="keyword">if</span> (!getStub || trebleTestingOverride) &#123;</span><br><span class="line">                        iface = <span class="keyword">new</span> BsCameraProvider(iface);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span>* ICameraProvider::descriptor(<span class="string">"android.hardware.camera.provider@2.4::ICameraProvider"</span>);</span><br></pre></td></tr></table></figure>
+<p>这是getStub==true的情况，</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">sp&lt;IServiceManager1_0&gt; getPassthroughServiceManager() &#123;</span><br><span class="line">    <span class="keyword">return</span> getPassthroughServiceManager1_1();</span><br><span class="line">&#125;</span><br><span class="line">sp&lt;IServiceManager1_1&gt; getPassthroughServiceManager1_1() &#123;</span><br><span class="line">    <span class="keyword">static</span> sp&lt;PassthroughServiceManager&gt; manager(<span class="keyword">new</span> PassthroughServiceManager());</span><br><span class="line">    <span class="keyword">return</span> manager;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>getPassthroughServiceManager返回了一个PassthroughServiceManager的实例。</p>
+<p>serviceName是”legacy/0”。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">Return&lt;sp&lt;IBase&gt;&gt; get(<span class="keyword">const</span> hidl_string&amp; fqName,</span><br><span class="line">                      <span class="keyword">const</span> hidl_string&amp; name) override &#123;</span><br><span class="line">    sp&lt;IBase&gt; ret = <span class="literal">nullptr</span>;</span><br><span class="line"></span><br><span class="line">    openLibs(fqName, [&amp;](<span class="keyword">void</span>* handle, <span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span> &amp;lib, <span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span> &amp;sym) &#123;</span><br><span class="line">        IBase* (*generator)(<span class="keyword">const</span> <span class="keyword">char</span>* name);</span><br><span class="line">        *(<span class="keyword">void</span> **)(&amp;generator) = dlsym(handle, sym.c_str());</span><br><span class="line">        <span class="keyword">if</span>(!generator) &#123;</span><br><span class="line">            <span class="keyword">const</span> <span class="keyword">char</span>* error = dlerror();</span><br><span class="line">            LOG(ERROR) &lt;&lt; <span class="string">"Passthrough lookup opened "</span> &lt;&lt; lib</span><br><span class="line">                       &lt;&lt; <span class="string">" but could not find symbol "</span> &lt;&lt; sym &lt;&lt; <span class="string">": "</span></span><br><span class="line">                       &lt;&lt; (error == <span class="literal">nullptr</span> ? <span class="string">"unknown error"</span> : error);</span><br><span class="line">            dlclose(handle);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        ret = (*generator)(name.c_str());</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (ret == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">            dlclose(handle);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>; <span class="comment">// this module doesn't provide this instance name</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        registerReference(fqName, name);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用openLibs传入了一个lambda函数。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//fqName == "android.hardware.camera.provider@2.4::ICameraProvider"</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">openLibs</span><span class="params">(<span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span>&amp; fqName,</span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="built_in">std</span>::function&lt;<span class="keyword">bool</span> <span class="comment">/* continue */</span>(<span class="keyword">void</span>* <span class="comment">/* handle */</span>,</span></span></span><br><span class="line">                const std::string&amp; /* lib */, const std::string&amp; /* sym */)&gt; eachLib) &#123;</span><br><span class="line">        <span class="comment">//fqName looks like android.hardware.foo@1.0::IFoo</span></span><br><span class="line">        <span class="keyword">size_t</span> idx = fqName.find(<span class="string">"::"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">string</span> packageAndVersion = fqName.substr(<span class="number">0</span>, idx);<span class="comment">//"android.hardware.camera.provider@2.4"</span></span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">string</span> ifaceName = fqName.substr(idx + <span class="built_in">strlen</span>(<span class="string">"::"</span>));<span class="comment">//"ICameraProvider"</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span> prefix = packageAndVersion + <span class="string">"-impl"</span>;</span><br><span class="line">    <span class="comment">//"android.hardware.camera.provider@2.4-impl"</span></span><br><span class="line">        <span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span> sym = <span class="string">"HIDL_FETCH_"</span> + ifaceName;<span class="comment">//"HIDL_FETCH_ICameraProvider"</span></span><br><span class="line">        <span class="comment">//#define RTLD_LAZY     0x00001</span></span><br><span class="line">        <span class="keyword">const</span> <span class="keyword">int</span> dlMode = RTLD_LAZY;</span><br><span class="line">        <span class="keyword">void</span> *handle = <span class="literal">nullptr</span>;</span><br><span class="line"></span><br><span class="line">        dlerror(); <span class="comment">// clear</span></span><br><span class="line"></span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;<span class="built_in">std</span>::<span class="built_in">string</span>&gt; paths = &#123;HAL_LIBRARY_PATH_ODM, HAL_LIBRARY_PATH_VENDOR,</span><br><span class="line">                                          HAL_LIBRARY_PATH_VNDK_SP, HAL_LIBRARY_PATH_SYSTEM&#125;;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> LIBHIDL_TARGET_DEBUGGABLE</span></span><br><span class="line">        <span class="keyword">const</span> <span class="keyword">char</span>* env = <span class="built_in">std</span>::getenv(<span class="string">"TREBLE_TESTING_OVERRIDE"</span>);</span><br><span class="line">        <span class="keyword">const</span> <span class="keyword">bool</span> trebleTestingOverride = env &amp;&amp; !<span class="built_in">strcmp</span>(env, <span class="string">"true"</span>);</span><br><span class="line">        <span class="keyword">if</span> (trebleTestingOverride) &#123;</span><br><span class="line">            <span class="keyword">const</span> <span class="keyword">char</span>* vtsRootPath = <span class="built_in">std</span>::getenv(<span class="string">"VTS_ROOT_PATH"</span>);</span><br><span class="line">            <span class="keyword">if</span> (vtsRootPath &amp;&amp; <span class="built_in">strlen</span>(vtsRootPath) &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span> halLibraryPathVtsOverride =</span><br><span class="line">                    <span class="built_in">std</span>::<span class="built_in">string</span>(vtsRootPath) + HAL_LIBRARY_PATH_SYSTEM;</span><br><span class="line">                paths.push_back(halLibraryPathVtsOverride);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span>&amp; path : paths) &#123;</span><br><span class="line">            <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;<span class="built_in">std</span>::<span class="built_in">string</span>&gt; libs = search(path, prefix, <span class="string">".so"</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span> &amp;lib : libs) &#123;</span><br><span class="line">                <span class="keyword">const</span> <span class="built_in">std</span>::<span class="built_in">string</span> fullPath = path + lib;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (path != HAL_LIBRARY_PATH_SYSTEM) &#123;</span><br><span class="line">                    handle = android_load_sphal_library(fullPath.c_str(), dlMode);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    handle = dlopen(fullPath.c_str(), dlMode);</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (handle == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">                    <span class="keyword">const</span> <span class="keyword">char</span>* error = dlerror();</span><br><span class="line">                    LOG(ERROR) &lt;&lt; <span class="string">"Failed to dlopen "</span> &lt;&lt; lib &lt;&lt; <span class="string">": "</span></span><br><span class="line">                               &lt;&lt; (error == <span class="literal">nullptr</span> ? <span class="string">"unknown error"</span> : error);</span><br><span class="line">                    <span class="keyword">continue</span>;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (!eachLib(handle, lib, sym)) &#123;</span><br><span class="line">                    <span class="keyword">return</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<p>openLibs主要就是在一些路径下面搜索<a href="mailto:android.hardware.camera.provider@2.4-impl.so" target="_blank" rel="noopener">android.hardware.camera.provider@2.4-impl.so</a>，找到后打开，然后回调上面传入的lambda函数。<br>大概的意思是<br>通过dlopen打开动态库并拿到句柄，通过dlsym找到HIDL_FETCH_ICameraProvider函数的地址，然后调用这个函数，传入的参数是”legacy/0”。<br>hardware/interfaces/camera/provider/2.4/default/CameraProvider.cpp<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">ICameraProvider* <span class="title">HIDL_FETCH_ICameraProvider</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span>* name)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">strcmp</span>(name, kLegacyProviderName) != <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    CameraProvider* provider = <span class="keyword">new</span> CameraProvider();</span><br><span class="line">    <span class="keyword">return</span> provider;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>创建CameraProvider， 初始化然后返回它。<br>所以ICameraProvider::getService在通过PassthroughServiceManager的get函数得到的是一个CameraProvider实例。最后再cast。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iface = ICameraProvider::castFrom(baseInterface);</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">::android::hardware::Return&lt;::android::sp&lt;ICameraProvider&gt;&gt; ICameraProvider::castFrom(<span class="keyword">const</span> ::android::sp&lt;::android::hidl::base::V1_0::IBase&gt;&amp; parent, <span class="keyword">bool</span> emitError) &#123;</span><br><span class="line">    <span class="keyword">return</span> ::android::hardware::details::castInterface&lt;ICameraProvider, ::android::hidl::base::V1_0::IBase, BpHwCameraProvider&gt;(</span><br><span class="line">            parent, <span class="string">"android.hardware.camera.provider@2.4::ICameraProvider"</span>, emitError);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> IChild, <span class="keyword">typename</span> IParent, <span class="keyword">typename</span> BpChild&gt;</span><br><span class="line">Return&lt;sp&lt;IChild&gt;&gt; castInterface(sp&lt;IParent&gt; parent, <span class="keyword">const</span> <span class="keyword">char</span>* childIndicator, <span class="keyword">bool</span> emitError) &#123;</span><br><span class="line">   <span class="keyword">if</span> (parent-&gt;isRemote()) &#123;<span class="comment">//false</span></span><br><span class="line">        <span class="comment">// binderized mode. Got BpChild. grab the remote and wrap it.</span></span><br><span class="line">        <span class="keyword">return</span> sp&lt;IChild&gt;(<span class="keyword">new</span> BpChild(toBinder&lt;IParent&gt;(parent)));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// Passthrough mode. Got BnChild and BsChild.</span></span><br><span class="line">    <span class="keyword">return</span> sp&lt;IChild&gt;(<span class="keyword">static_cast</span>&lt;IChild *&gt;(parent.get()));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>CameraProvider的指针static_cast为ICameraProvider指针。</p>
+<p>Frameworks层的CameraService会调用ICameraProvider的接口，其服务端的实现就是CameraProvider。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>ICameraProvider启动会打开binder设备，并且进入循环，从binder中读取Client端发来的命令并且执行，它的业务逻辑的实现在CameraProvider中，Client端就是Frameworks的CameraService进程。CameraService在启动时会getI到CameraProvider的代理保存在ProviderInfo中。</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/16/Camera2-preview/" rel="next" title="Camera2 preview">
+                <i class="fa fa-chevron-left"></i> Camera2 preview
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">GuoXf</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">14</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">6</span>
+                    <span class="site-state-item-name">tags</span>
+                  
+                </div>
+              
+            </nav>
+          
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Camera-provider-Service-启动流程"><span class="nav-number">1.</span> <span class="nav-text">Camera provider Service 启动流程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#引言"><span class="nav-number"></span> <span class="nav-text">引言</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#代码追踪"><span class="nav-number">1.</span> <span class="nav-text">代码追踪</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number"></span> <span class="nav-text">小结</span></a></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">GuoXf</span>
+
+  
+
+  
+</div>
+
+
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> v3.7.1</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a class="theme-link" target="_blank" href="https://theme-next.org">NexT.Muse</a> v6.4.1</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+	
+    
+
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=6.4.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=6.4.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=6.4.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=6.4.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=6.4.1"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
