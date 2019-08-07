@@ -277,6 +277,184 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/08/07/GLSurfaceView源码阅读/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="GuoXf">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Something">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/08/07/GLSurfaceView源码阅读/" itemprop="url">
+                  GLSurfaceView源码阅读
+                </a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-08-07 22:50:12 / Modified: 22:52:17" itemprop="dateCreated datePublished" datetime="2019-08-07T22:50:12+08:00">2019-08-07</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="GLSurfaceView-源码分析"><a href="#GLSurfaceView-源码分析" class="headerlink" title="GLSurfaceView 源码分析"></a>GLSurfaceView 源码分析</h3><h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>本文分析GLSurfaceView的源码</p>
+<h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>GLSurfaceVIew 是 SurfaceView的一个实现，它使用了一个专用的Surface来显示OpenGL渲染。</p>
+<p>GLSurfaceView提供了一下特性,</p>
+<ol>
+<li>管理一个Surface，也就是一个内存块，可以被复合到View System。</li>
+<li>接受一个自定义的Renderer对象处理实际的渲染工作。</li>
+<li>在一个专用的线程中渲染，与UI Thread 解耦，并具有较好的性能。</li>
+<li>支持on-demand渲染和continuous渲染。</li>
+</ol>
+<h3 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h3><p>GLSurfaceView 继承了SurfaceView， 并实现了SurfaceHolder.Callback2接口。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Callback2</span> <span class="keyword">extends</span> <span class="title">Callback</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">surfaceRedrawNeeded</span><span class="params">(SurfaceHolder holder)</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Callback</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">surfaceCreated</span><span class="params">(SurfaceHolder holder)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">surfaceChanged</span><span class="params">(SurfaceHolder holder, <span class="keyword">int</span> format, <span class="keyword">int</span> width,</span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">int</span> height)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">surfaceDestroyed</span><span class="params">(SurfaceHolder holder)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>构造方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">GLSurfaceView</span><span class="params">(Context context, AttributeSet attrs)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>(context, attrs);</span><br><span class="line">    init();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Renderer接口</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Renderer</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">onSurfaceCreated</span><span class="params">(GL10 gl, EGLConfig config)</span></span>;</span><br><span class="line"></span><br><span class="line">   </span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">onSurfaceChanged</span><span class="params">(GL10 gl, <span class="keyword">int</span> width, <span class="keyword">int</span> height)</span></span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">onDrawFrame</span><span class="params">(GL10 gl)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>setRenderer方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setRenderer</span><span class="params">(Renderer renderer)</span> </span>&#123;</span><br><span class="line">    checkRenderThreadState();<span class="comment">//确保mGLThread == null</span></span><br><span class="line">    <span class="keyword">if</span> (mEGLConfigChooser == <span class="keyword">null</span>) &#123;</span><br><span class="line">        mEGLConfigChooser = <span class="keyword">new</span> SimpleEGLConfigChooser(<span class="keyword">true</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (mEGLContextFactory == <span class="keyword">null</span>) &#123;</span><br><span class="line">        mEGLContextFactory = <span class="keyword">new</span> DefaultContextFactory();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (mEGLWindowSurfaceFactory == <span class="keyword">null</span>) &#123;</span><br><span class="line">        mEGLWindowSurfaceFactory = <span class="keyword">new</span> DefaultWindowSurfaceFactory();</span><br><span class="line">    &#125;</span><br><span class="line">    mRenderer = renderer;</span><br><span class="line">    mGLThread = <span class="keyword">new</span> GLThread(mThisWeakRef);</span><br><span class="line">    mGLThread.start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>创建GlThread并start</p>
+<p>GLThread继承了Thread，它的run方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    setName(<span class="string">"GLThread "</span> + getId());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        guardedRun();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        <span class="comment">// fall thru and exit normally</span></span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        sGLThreadManager.threadExiting(<span class="keyword">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>guardedRun方法非常长，里面有 while (true)循环，</p>
+<p>内部类EglHelper提供了EGL的相关操作，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//初始化EGL环境</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//主要初始化几个变量mEglDisplay, mEglConfig, mEglContext</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Get an EGL instance</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    mEgl = (EGL10) EGLContext.getEGL();</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Get to the default display.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    mEglDisplay = mEgl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (mEglDisplay == EGL10.EGL_NO_DISPLAY) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">"eglGetDisplay failed"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * We can now initialize EGL for that display</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">int</span>[] version = <span class="keyword">new</span> <span class="keyword">int</span>[<span class="number">2</span>];</span><br><span class="line">    <span class="keyword">if</span>(!mEgl.eglInitialize(mEglDisplay, version)) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">"eglInitialize failed"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    GLSurfaceView view = mGLSurfaceViewWeakRef.get();</span><br><span class="line">    <span class="keyword">if</span> (view == <span class="keyword">null</span>) &#123;</span><br><span class="line">        mEglConfig = <span class="keyword">null</span>;</span><br><span class="line">        mEglContext = <span class="keyword">null</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        mEglConfig = view.mEGLConfigChooser.chooseConfig(mEgl, mEglDisplay);</span><br><span class="line"></span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">        * Create an EGL context. We want to do this as rarely as we can, because an</span></span><br><span class="line"><span class="comment">        * EGL context is a somewhat heavy object.</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        mEglContext = view.mEGLContextFactory.createContext(mEgl, mEglDisplay, mEglConfig);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (mEglContext == <span class="keyword">null</span> || mEglContext == EGL10.EGL_NO_CONTEXT) &#123;</span><br><span class="line">        mEglContext = <span class="keyword">null</span>;</span><br><span class="line">        throwEglException(<span class="string">"createContext"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    mEglSurface = <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//创建和销毁EGlSurface</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">EGLWindowSurfaceFactory</span> </span>&#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *  <span class="doctag">@return</span> null if the surface cannot be constructed.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">EGLSurface <span class="title">createWindowSurface</span><span class="params">(EGL10 egl, EGLDisplay display, EGLConfig config,</span></span></span><br><span class="line"><span class="function"><span class="params">            Object nativeWindow)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">destroySurface</span><span class="params">(EGL10 egl, EGLDisplay display, EGLSurface surface)</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">DefaultWindowSurfaceFactory</span> <span class="keyword">implements</span> <span class="title">EGLWindowSurfaceFactory</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> EGLSurface <span class="title">createWindowSurface</span><span class="params">(EGL10 egl, EGLDisplay display,</span></span></span><br><span class="line"><span class="function"><span class="params">            EGLConfig config, Object nativeWindow)</span> </span>&#123;</span><br><span class="line">        EGLSurface result = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            result = egl.eglCreateWindowSurface(display, config, nativeWindow, <span class="keyword">null</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IllegalArgumentException e) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">destroySurface</span><span class="params">(EGL10 egl, EGLDisplay display,</span></span></span><br><span class="line"><span class="function"><span class="params">            EGLSurface surface)</span> </span>&#123;</span><br><span class="line">        egl.eglDestroySurface(display, surface);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在创建EGLSurface之后要调用eglMakeCurrent</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Before we can issue GL commands, we need to make sure</span></span><br><span class="line"><span class="comment"> * the context is current and bound to a surface.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">if</span> (!mEgl.eglMakeCurrent(mEglDisplay, mEglSurface, mEglSurface, mEglContext)) &#123;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Could not make the context current, probably because the underlying</span></span><br><span class="line"><span class="comment">     * SurfaceView surface has been destroyed.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    logEglErrorAsWarning(<span class="string">"EGLHelper"</span>, <span class="string">"eglMakeCurrent"</span>, mEgl.eglGetError());</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在GLThread的while（true） 循环中, 回调Renderer的onSurfaceCreated，在这个回调中可以初始化Render所需要的资源</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">if</span> (createEglContext) &#123;</span><br><span class="line">    GLSurfaceView view = mGLSurfaceViewWeakRef.get();</span><br><span class="line">    <span class="keyword">if</span> (view != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Trace.traceBegin(Trace.TRACE_TAG_VIEW, <span class="string">"onSurfaceCreated"</span>);</span><br><span class="line">            view.mRenderer.onSurfaceCreated(gl, mEglHelper.mEglConfig);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            Trace.traceEnd(Trace.TRACE_TAG_VIEW);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    createEglContext = <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Renderer的onSurfaceChanged回调，在这里可以set viewport，gl.glViewport(0, 0, width, height);</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">if</span> (sizeChanged) &#123;</span><br><span class="line">    GLSurfaceView view = mGLSurfaceViewWeakRef.get();</span><br><span class="line">    <span class="keyword">if</span> (view != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Trace.traceBegin(Trace.TRACE_TAG_VIEW, <span class="string">"onSurfaceChanged"</span>);</span><br><span class="line">            view.mRenderer.onSurfaceChanged(gl, w, h);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            Trace.traceEnd(Trace.TRACE_TAG_VIEW);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    sizeChanged = <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Renderer的onDrawFrame， 在这里调用gl绘制</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    GLSurfaceView view = mGLSurfaceViewWeakRef.get();</span><br><span class="line">    <span class="keyword">if</span> (view != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Trace.traceBegin(Trace.TRACE_TAG_VIEW, <span class="string">"onDrawFrame"</span>);</span><br><span class="line">            view.mRenderer.onDrawFrame(gl);</span><br><span class="line">            <span class="keyword">if</span> (finishDrawingRunnable != <span class="keyword">null</span>) &#123;</span><br><span class="line">                finishDrawingRunnable.run();</span><br><span class="line">                finishDrawingRunnable = <span class="keyword">null</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            Trace.traceEnd(Trace.TRACE_TAG_VIEW);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>onDrawFrame之后会调用eglSwapBuffers。</p>
+<p>onResume和onPause</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onPause</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    mGLThread.onPause();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onResume</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    mGLThread.onResume();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onPause</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (sGLThreadManager) &#123;</span><br><span class="line">            mRequestPaused = <span class="keyword">true</span>;</span><br><span class="line">            sGLThreadManager.notifyAll();</span><br><span class="line">            <span class="keyword">while</span> ((! mExited) &amp;&amp; (! mPaused)) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    sGLThreadManager.wait();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException ex) &#123;</span><br><span class="line">                    Thread.currentThread().interrupt();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onResume</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (sGLThreadManager) &#123;</span><br><span class="line">            mRequestPaused = <span class="keyword">false</span>;</span><br><span class="line">            mRequestRender = <span class="keyword">true</span>;</span><br><span class="line">            mRenderComplete = <span class="keyword">false</span>;</span><br><span class="line">            sGLThreadManager.notifyAll();</span><br><span class="line">            <span class="keyword">while</span> ((! mExited) &amp;&amp; mPaused &amp;&amp; (!mRenderComplete)) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    sGLThreadManager.wait();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException ex) &#123;</span><br><span class="line">                    Thread.currentThread().interrupt();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>通过改变几个boolean变量控制GLThread</p>
+<p>SurfaceHodler.Callback的几个接口，surfaceCreated， surfaceDestroyed， surfaceChanged，<br>包括requestRender，<br>都会调用GLThread的方法，改变那几个boolean变量，控制GLThread的执行。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>从上面的分析，我们可以看到， GlSurfaceView主要是提供了gl环境和GLThread，用户可以定义Renderer对象，来实现渲染逻辑。</p>
+<p>同时提供了requestRender， onPause, onResume等几个方法，来控制GLThread的执行。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/16/Camera-provider-service/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1779,168 +1957,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/09/24/Glide源码阅读2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="GuoXf">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Something">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/09/24/Glide源码阅读2/" itemprop="url">
-                  Glide源码阅读2
-                </a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2018-09-24 18:41:35 / Modified: 20:10:45" itemprop="dateCreated datePublished" datetime="2018-09-24T18:41:35+08:00">2018-09-24</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>本文继续分析Glide源码，主要关注一下Engine</p>
-<h2 id="源码追溯"><a href="#源码追溯" class="headerlink" title="源码追溯"></a>源码追溯</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> &lt;R&gt; <span class="function">LoadStatus <span class="title">load</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">      GlideContext glideContext,</span></span></span><br><span class="line"><span class="function"><span class="params">      Object model,</span></span></span><br><span class="line"><span class="function"><span class="params">      Key signature,</span></span></span><br><span class="line"><span class="function"><span class="params">      <span class="keyword">int</span> width,</span></span></span><br><span class="line"><span class="function"><span class="params">      <span class="keyword">int</span> height,</span></span></span><br><span class="line"><span class="function"><span class="params">      Class&lt;?&gt; resourceClass,</span></span></span><br><span class="line"><span class="function"><span class="params">      Class&lt;R&gt; transcodeClass,</span></span></span><br><span class="line"><span class="function"><span class="params">      Priority priority,</span></span></span><br><span class="line"><span class="function"><span class="params">      DiskCacheStrategy diskCacheStrategy,</span></span></span><br><span class="line"><span class="function"><span class="params">      Map&lt;Class&lt;?&gt;, Transformation&lt;?&gt;&gt; transformations,</span></span></span><br><span class="line"><span class="function"><span class="params">      <span class="keyword">boolean</span> isTransformationRequired,</span></span></span><br><span class="line"><span class="function"><span class="params">      <span class="keyword">boolean</span> isScaleOnlyOrNoTransform,</span></span></span><br><span class="line"><span class="function"><span class="params">      Options options,</span></span></span><br><span class="line"><span class="function"><span class="params">      <span class="keyword">boolean</span> isMemoryCacheable,</span></span></span><br><span class="line"><span class="function"><span class="params">      <span class="keyword">boolean</span> useUnlimitedSourceExecutorPool,</span></span></span><br><span class="line"><span class="function"><span class="params">      <span class="keyword">boolean</span> useAnimationPool,</span></span></span><br><span class="line"><span class="function"><span class="params">      <span class="keyword">boolean</span> onlyRetrieveFromCache,</span></span></span><br><span class="line"><span class="function"><span class="params">      ResourceCallback cb)</span> </span>&#123;</span><br><span class="line">    Util.assertMainThread();</span><br><span class="line"></span><br><span class="line">    EngineKey key = keyFactory.buildKey(model, signature, width, height, transformations,</span><br><span class="line">        resourceClass, transcodeClass, options);</span><br><span class="line"></span><br><span class="line">    EngineResource&lt;?&gt; active = loadFromActiveResources(key, isMemoryCacheable);</span><br><span class="line">    <span class="keyword">if</span> (active != <span class="keyword">null</span>) &#123;</span><br><span class="line">      cb.onResourceReady(active, DataSource.MEMORY_CACHE);</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    EngineResource&lt;?&gt; cached = loadFromCache(key, isMemoryCacheable);</span><br><span class="line">    <span class="keyword">if</span> (cached != <span class="keyword">null</span>) &#123;</span><br><span class="line">      cb.onResourceReady(cached, DataSource.MEMORY_CACHE);</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    EngineJob&lt;?&gt; current = jobs.get(key, onlyRetrieveFromCache);</span><br><span class="line">    <span class="keyword">if</span> (current != <span class="keyword">null</span>) &#123;</span><br><span class="line">      current.addCallback(cb);</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">new</span> LoadStatus(cb, current);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    EngineJob&lt;R&gt; engineJob =</span><br><span class="line">        engineJobFactory.build(</span><br><span class="line">            key,</span><br><span class="line">            isMemoryCacheable,</span><br><span class="line">            useUnlimitedSourceExecutorPool,</span><br><span class="line">            useAnimationPool,</span><br><span class="line">            onlyRetrieveFromCache);</span><br><span class="line"></span><br><span class="line">    DecodeJob&lt;R&gt; decodeJob =</span><br><span class="line">        decodeJobFactory.build(</span><br><span class="line">            glideContext,</span><br><span class="line">            model,</span><br><span class="line">            key,</span><br><span class="line">            signature,</span><br><span class="line">            width,</span><br><span class="line">            height,</span><br><span class="line">            resourceClass,</span><br><span class="line">            transcodeClass,</span><br><span class="line">            priority,</span><br><span class="line">            diskCacheStrategy,</span><br><span class="line">            transformations,</span><br><span class="line">            isTransformationRequired,</span><br><span class="line">            isScaleOnlyOrNoTransform,</span><br><span class="line">            onlyRetrieveFromCache,</span><br><span class="line">            options,</span><br><span class="line">            engineJob);</span><br><span class="line"></span><br><span class="line">    jobs.put(key, engineJob);</span><br><span class="line"></span><br><span class="line">    engineJob.addCallback(cb);</span><br><span class="line">    engineJob.start(decodeJob);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> LoadStatus(cb, engineJob);</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-<p>我们看到首先会从激活的资源中获取，获取不到会去缓存中获取，分别是loadFromActiveResources<br>和loadFromCache</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Nullable</span></span><br><span class="line">  <span class="keyword">private</span> EngineResource&lt;?&gt; loadFromActiveResources(Key key, <span class="keyword">boolean</span> isMemoryCacheable) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!isMemoryCacheable) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    EngineResource&lt;?&gt; active = activeResources.get(key);</span><br><span class="line">    <span class="keyword">if</span> (active != <span class="keyword">null</span>) &#123;</span><br><span class="line">      active.acquire();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> active;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-<p>activeResources内部有一个HashMap</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> EngineResource&lt;?&gt; loadFromCache(Key key, <span class="keyword">boolean</span> isMemoryCacheable) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!isMemoryCacheable) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    EngineResource&lt;?&gt; cached = getEngineResourceFromCache(key);</span><br><span class="line">    <span class="keyword">if</span> (cached != <span class="keyword">null</span>) &#123;</span><br><span class="line">      cached.acquire();</span><br><span class="line">      activeResources.activate(key, cached);<span class="comment">//从缓存中获取出来就将其放入激活的HashMap中，而且在cache中是移除的</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> cached;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> EngineResource&lt;?&gt; getEngineResourceFromCache(Key key) &#123;</span><br><span class="line">    Resource&lt;?&gt; cached = cache.remove(key);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> EngineResource&lt;?&gt; result;</span><br><span class="line">    <span class="keyword">if</span> (cached == <span class="keyword">null</span>) &#123;</span><br><span class="line">      result = <span class="keyword">null</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (cached <span class="keyword">instanceof</span> EngineResource) &#123;</span><br><span class="line">      <span class="comment">// Save an object allocation if we've cached an EngineResource (the typical case).</span></span><br><span class="line">      result = (EngineResource&lt;?&gt;) cached;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      result = <span class="keyword">new</span> EngineResource&lt;&gt;(cached, <span class="keyword">true</span> <span class="comment">/*isMemoryCacheable*/</span>, <span class="keyword">true</span> <span class="comment">/*isRecyclable*/</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-<p>这里的cache就是在初始化Glide时创建的LruResourceCache， 它的内部是一个LinkedHashMap实现的LruCache。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> Map&lt;T, Y&gt; cache = <span class="keyword">new</span> LinkedHashMap&lt;&gt;(<span class="number">100</span>, <span class="number">0.75f</span>, <span class="keyword">true</span>);</span><br></pre></td></tr></table></figure>
-<p>LinkedHashMap和HashMap的主要区别是它整个是一个链表，可以通过访问顺序来调整元素的顺序，很适合做lrucache</p>
-<p>在从激活资源中移除时又会放回到cache中</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onResourceReleased</span><span class="params">(Key cacheKey, EngineResource&lt;?&gt; resource)</span> </span>&#123;</span><br><span class="line">    Util.assertMainThread();</span><br><span class="line">    activeResources.deactivate(cacheKey);</span><br><span class="line">    <span class="keyword">if</span> (resource.isCacheable()) &#123;</span><br><span class="line">      cache.put(cacheKey, resource);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      resourceRecycler.recycle(resource);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-<p>所以激活资源和lrucache实际上相当于是两级缓存。</p>
-<p>如果在两级缓存中都没有，就需要实际的去加载了。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">engineJob.start(decodeJob);</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">(DecodeJob&lt;R&gt; decodeJob)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.decodeJob = decodeJob;</span><br><span class="line">    GlideExecutor executor = decodeJob.willDecodeFromCache()</span><br><span class="line">        ? diskCacheExecutor</span><br><span class="line">        : getActiveSourceExecutor();</span><br><span class="line">    executor.execute(decodeJob);</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-<p>解码也首先去判断是否从diskcache中去解码资源，以此决定用哪个Excutor。<br>主要区别是线程池的核心线程数和最大线程数以及任务队列。</p>
-<p>接下来看下decodejob</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">runWrapped</span><span class="params">()</span> </span>&#123;</span><br><span class="line">   <span class="keyword">switch</span> (runReason) &#123;</span><br><span class="line">     <span class="keyword">case</span> INITIALIZE:</span><br><span class="line">       stage = getNextStage(Stage.INITIALIZE);</span><br><span class="line">       currentGenerator = getNextGenerator();</span><br><span class="line">       runGenerators();</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">case</span> SWITCH_TO_SOURCE_SERVICE:</span><br><span class="line">       runGenerators();</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">case</span> DECODE_DATA:</span><br><span class="line">       decodeFromRetrievedData();</span><br><span class="line">       <span class="keyword">break</span>;</span><br><span class="line">     <span class="keyword">default</span>:</span><br><span class="line">       <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Unrecognized run reason: "</span> + runReason);</span><br><span class="line">   &#125;</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">private</span> DataFetcherGenerator <span class="title">getNextGenerator</span><span class="params">()</span> </span>&#123;</span><br><span class="line">   <span class="keyword">switch</span> (stage) &#123;</span><br><span class="line">     <span class="keyword">case</span> RESOURCE_CACHE:</span><br><span class="line">       <span class="keyword">return</span> <span class="keyword">new</span> ResourceCacheGenerator(decodeHelper, <span class="keyword">this</span>);</span><br><span class="line">     <span class="keyword">case</span> DATA_CACHE:</span><br><span class="line">       <span class="keyword">return</span> <span class="keyword">new</span> DataCacheGenerator(decodeHelper, <span class="keyword">this</span>);</span><br><span class="line">     <span class="keyword">case</span> SOURCE:</span><br><span class="line">       <span class="keyword">return</span> <span class="keyword">new</span> SourceGenerator(decodeHelper, <span class="keyword">this</span>);</span><br><span class="line">     <span class="keyword">case</span> FINISHED:</span><br><span class="line">       <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">     <span class="keyword">default</span>:</span><br><span class="line">       <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Unrecognized stage: "</span> + stage);</span><br><span class="line">   &#125;</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">runGenerators</span><span class="params">()</span> </span>&#123;</span><br><span class="line">   currentThread = Thread.currentThread();</span><br><span class="line">   startFetchTime = LogTime.getLogTime();</span><br><span class="line">   <span class="keyword">boolean</span> isStarted = <span class="keyword">false</span>;</span><br><span class="line">   <span class="keyword">while</span> (!isCancelled &amp;&amp; currentGenerator != <span class="keyword">null</span></span><br><span class="line">       &amp;&amp; !(isStarted = currentGenerator.startNext())) &#123;</span><br><span class="line">     stage = getNextStage(stage);</span><br><span class="line">     currentGenerator = getNextGenerator();</span><br><span class="line"></span><br><span class="line">     <span class="keyword">if</span> (stage == Stage.SOURCE) &#123;</span><br><span class="line">       reschedule();</span><br><span class="line">       <span class="keyword">return</span>;</span><br><span class="line">     &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">if</span> ((stage == Stage.FINISHED || isCancelled) &amp;&amp; !isStarted) &#123;</span><br><span class="line">     notifyFailed();</span><br><span class="line">   &#125;</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span> <span class="keyword">enum</span> Stage &#123;</span><br><span class="line">   <span class="comment">/** The initial stage. */</span></span><br><span class="line">   INITIALIZE,</span><br><span class="line">   <span class="comment">/** Decode from a cached resource. */</span></span><br><span class="line">   RESOURCE_CACHE,</span><br><span class="line">   <span class="comment">/** Decode from cached source data. */</span></span><br><span class="line">   DATA_CACHE,</span><br><span class="line">   <span class="comment">/** Decode from retrieved source. */</span></span><br><span class="line">   SOURCE,</span><br><span class="line">   <span class="comment">/** Encoding transformed resources after a successful load. */</span></span><br><span class="line">   ENCODE,</span><br><span class="line">   <span class="comment">/** No more viable stages. */</span></span><br><span class="line">   FINISHED,</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
-<p>这一部分看上去挺复杂的，简单的理解为还是逐个从各级缓存decode，最终通过实际的图片资源decode。</p>
-<p>假设已经加载成功，并且还都已经做了缓存，会回调Target,这里是ImageViewTarget</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onResourceReady</span><span class="params">(@NonNull Z resource, @Nullable Transition&lt;? <span class="keyword">super</span> Z&gt; transition)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (transition == <span class="keyword">null</span> || !transition.transition(resource, <span class="keyword">this</span>)) &#123;</span><br><span class="line">      setResourceInternal(resource);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      maybeUpdateAnimatable(resource);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-<p>也就是会调用到View的setXXX方法来设置图片，或者启动动画。</p>
-<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>通过对Glide源码的简单分析，可以看到主要的设计思路是围绕着缓存展开的，对于其中很多细节没有深入的挖掘，但对于Glide的源码有一个大概的认识。<br>对于LruCache加深了认识。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1988,7 +2004,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">14</span>
+                    <span class="site-state-item-count">15</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2015,7 +2031,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">6</span>
+                      
+                    
+                    <span class="site-state-item-count">7</span>
                     <span class="site-state-item-name">tags</span>
                   
                 </div>
